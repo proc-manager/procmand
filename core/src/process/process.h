@@ -57,18 +57,15 @@ struct ProcessJob {
     struct ProcessJobCommand* Command;
 };
 
-
-
 struct Process {
-    // id of the process 
-    char* Id;
-    char* Name;
-    int Pid;
-    char* ContextDir;
-    struct Image* Image;
-    struct ProcessJob* Job;
-    struct ProcessEnv* Env;
-    struct ProcessNetwork* Network;
+    char* Id; // id of the process (don't confuse with pid)
+    char* Name; // name of the process
+    int Pid; // pid of the process
+    char* ContextDir; // absolute path to the process' context directory
+    struct Image* Image; // process image metadata
+    struct ProcessJob* Job; // process job metadata
+    struct ProcessEnv* Env; // process env vars
+    struct ProcessNetwork* Network; // process network
 
     // params from outside the yaml 
     int fd[2];
