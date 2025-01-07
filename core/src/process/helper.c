@@ -7,7 +7,10 @@
 #include "common/logger.h"
 
 void graceful_exit(struct Process* proc, char* msg, int exit_code) {
-    printf("graceful exit called");
+    struct LogContext log_ctx;
+    get_std_logger(&log_ctx);
+
+    log_info(&log_ctx, "graceful exit called");
 
     free_process(proc);
     perror(msg);

@@ -9,6 +9,8 @@
         "helper.h": "c",
         "isoproc.h": "c",
         "process.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "logger.h": "c",
+        "types.h": "c"
     }
 }
