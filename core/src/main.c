@@ -55,7 +55,12 @@ int main() {
     log_warn(&ctx, "some warn\n");
     log_error(&ctx, "some err\n");
 
-    // struct Process* p = calloc(1, sizeof(struct Process));
+
+    
+    struct Process* p = calloc(1, sizeof(struct Process));
+    start_process("process.yaml", p);
+    free_process(p);
+
     // parse_process_yaml("process.yaml", p);
     // print_parsed_process(p);
     // free_process(p);
