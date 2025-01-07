@@ -12,4 +12,6 @@ void parse_process_env(yaml_parser_t* parser, struct ProcessEnv* penv);
 void parse_process_net(yaml_parser_t* parser, struct ProcessNetwork* net);
 void parse_pnet_ports(yaml_parser_t* parser, struct ProcessNetwork* net);
 void parse_pnet_port_map(yaml_parser_t* parser, struct PortMap* pm);
+
+void print_parsed_process(struct Process *process);
 #endif // PARSE_PROC_SPEC_H

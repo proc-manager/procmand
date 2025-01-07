@@ -5,7 +5,7 @@ LDFLAGS = -lyaml
 
 # Directories
 SRC_DIR = src
-BUILD_DIR = build
+BUILD_DIR = .build
 INCLUDE_DIR = src
 
 # Source files and object files

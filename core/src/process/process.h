@@ -68,7 +68,7 @@ struct Process {
     struct ProcessNetwork* Network; // process network
 
     // params from outside the yaml 
-    int fd[2];
+
     char* Stack; // the allocated stack - must be freed
     char* Rootfs; // pointer to rootfs 
     int ExitStatus; // exit status
@@ -135,7 +135,5 @@ void free_process_stack(struct Process* proc);
     Free function for the rootfs of the process
 */
 void free_process_rootfs(struct Process* proc);
-
-
 
 #endif

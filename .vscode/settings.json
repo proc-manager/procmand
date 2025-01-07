@@ -8,6 +8,7 @@
         "mount.h": "c",
         "helper.h": "c",
         "isoproc.h": "c",
-        "process.h": "c"
+        "process.h": "c",
+        "stdio.h": "c"
     }
 }
