@@ -1,0 +1,7 @@
+#ifndef COMMON_ERROR_CODES_H
+#define COMMON_ERROR_CODES_H
+
+#define SUCCESS 0
+#define PROCESS_SPEC_PARSE_FAILED 1001
+
+#endif
