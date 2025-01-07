@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 
 #include<signal.h>
@@ -45,7 +46,7 @@ void start_process(char* process_yaml_loc, struct Process* p) {
     graceful_exit(p, "success", 0);
 }
 
-int main(int argc, char* argv[]) {
+int main() {
     struct LogContext ctx;
     get_std_logger(&ctx);
 
