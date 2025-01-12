@@ -18,16 +18,38 @@
 
 
 int isoproc(void* p) {
-    
+
+    // init process 
+    // this process sets up the namespace and monitors the child process
+    // it exits the namespace once there are no children
+
+    struct LogContext ctx; 
+    get_std_logger(&ctx);
+
+    log_info(&ctx, "creating the init process in the new namespace");
+
     struct Process* process = (struct Process*)p;
 
     if( chdir(process->ContextDir) != 0 ) {
+        log_error(&ctx, "error chdir");
         graceful_exit(process, "error chdir to context directory" ,1);
     }
 
     prepare_mntns(process);
     overwrite_env(process);
-    execute_job(process);
+
+    int pid = fork();
+    if ( pid == -1 ){
+        log_error(&ctx, "error forking");
+        graceful_exit(process, "error forking the job process", 1);
+    } else if ( pid == 0 ) {
+        log_info(&ctx, "executing child");
+        execute_job(process);
+        log_info(&ctx, "child exec finished");
+        return 0;
+    } else {
+        log_info(&ctx, "monitoring child proc");
+    }
 
     return 0;
 }

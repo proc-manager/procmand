@@ -26,7 +26,7 @@ void start_process(char* process_yaml_loc, struct Process* p) {
         exit(1);
     }
 
-    int clone_flags = SIGCHLD | CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWUSER;
+    int clone_flags = SIGCHLD | CLONE_NEWNS;
     char* cmd_stack = malloc(STACKSIZE);
 
     pid_t pid = clone(isoproc, cmd_stack + STACKSIZE, clone_flags, (void*)p);
@@ -60,8 +60,4 @@ int main() {
     struct Process* p = calloc(1, sizeof(struct Process));
     start_process("process.yaml", p);
     free_process(p);
-
-    // parse_process_yaml("process.yaml", p);
-    // print_parsed_process(p);
-    // free_process(p);
 }
