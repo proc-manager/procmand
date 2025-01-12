@@ -10,6 +10,7 @@
 #include <sys/syscall.h>
 #include <sys/mount.h>
 #include <sys/wait.h>
+#include <sys/types.h>
 
 // custom 
 #include "process.h"
@@ -38,6 +39,7 @@ int isoproc(void* p) {
     prepare_mntns(process);
     overwrite_env(process);
 
+    int status;
     int pid = fork();
     if ( pid == -1 ){
         log_error(&ctx, "error forking");
@@ -49,8 +51,18 @@ int isoproc(void* p) {
         return 0;
     } else {
         log_info(&ctx, "monitoring child proc");
+        while(1) {
+            waitpid(pid, &status, WNOHANG);
+            if (WIFEXITED(status)) {
+                log_info(&ctx, "child executed successfully");
+                graceful_exit(process, "child exited successfully", 1);
+            } else if (WIFSIGNALED(status)) {
+                log_info(&ctx, "child terminated with signal");
+                graceful_exit(process, "error in child", 1);
+            }         
+            sleep(1);
+        } 
     }
-
     return 0;
 }
 
