@@ -27,13 +27,13 @@ int isoproc(void* p) {
     struct LogContext ctx; 
     get_std_logger(&ctx);
 
-    log_info(&ctx, "creating the init process in the new namespace");
+    log_info(&ctx, "creating the init process in the new namespace\n");
 
     struct Process* process = (struct Process*)p;
 
     if( chdir(process->ContextDir) != 0 ) {
-        log_error(&ctx, "error chdir");
-        graceful_exit(process, "error chdir to context directory" ,1);
+        log_error(&ctx, "error chdir\n");
+        graceful_exit(process, "error chdir to context directory\n" ,1);
     }
 
     prepare_mntns(process);
@@ -74,35 +74,35 @@ void prepare_mntns(struct Process* proc) {
     printf("preparing mntns\n");
 
     if ( sprintf(buffer, "%s/%s", proc->ContextDir, "rootfs") < 0 ) {
-        graceful_exit(proc, "error copying rootfs path to buf", 1);
+        graceful_exit(proc, "error copying rootfs path to buf\n", 1);
     }
 
     mntfs = strdup(buffer);
     proc->Rootfs = mntfs;
 
     if ( mount(proc->Rootfs, mntfs, "ext4", MS_BIND, "")) {
-        graceful_exit(proc, "error mounting", 1);
+        graceful_exit(proc, "error mounting\n", 1);
     } 
     printf("mounted rootfs\n");
 
     if ( chdir(mntfs) ) {
-        graceful_exit(proc, "error chdir", 1);
+        graceful_exit(proc, "error chdir\n", 1);
     }
     printf("changed dir to: %s\n", mntfs);
 
     const char* put_old = ".put_old";
     if( mkdir(put_old, 0777) && errno != EEXIST ) {
-        graceful_exit(proc, "error creating the putold directory", 1);
+        graceful_exit(proc, "error creating the putold directory\n", 1);
     }
     printf("created .put_old\n");
 
     if ( syscall(SYS_pivot_root, ".", put_old) == -1 ) {  
-        graceful_exit(proc, "error pivoting root", 1);
+        graceful_exit(proc, "error pivoting root\n", 1);
     }
     printf("performed sys_pivot\n");
 
     if ( chdir("/") ) {
-        graceful_exit(proc, "error chdir to root", 1);
+        graceful_exit(proc, "error chdir to root\n", 1);
     }
     printf("chdir to root successful\n");
 
