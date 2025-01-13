@@ -58,9 +58,10 @@ int main(int argc, char* argv[]) {
     get_std_logger(&ctx);    
     if (argc < 2) {
         print_usage();
-        return;
+        return 1;
     }
     struct Process* p = calloc(1, sizeof(struct Process));
     start_process(argv[1], p);
     free_process(p);
+    return 0;
 }
