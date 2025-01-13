@@ -1,6 +1,6 @@
 # Compiler and flags
 CC = gcc
-CFLAGS = -Wall -Wextra -I$(INCLUDE_DIR) -MMD -MP
+CFLAGS = -Wall -Wextra -g -I$(INCLUDE_DIR) -MMD -MP
 LDFLAGS = -lyaml
 
 # Directories
