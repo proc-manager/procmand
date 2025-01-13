@@ -46,18 +46,21 @@ void start_process(char* process_yaml_loc, struct Process* p) {
     graceful_exit(p, "success", 0);
 }
 
-int main() {
+
+void print_usage() {
+    printf("\nUsage: procman <filepath>\n");
+}
+
+
+
+int main(int argc, char* argv[]) {
     struct LogContext ctx;
-    get_std_logger(&ctx);
-
-    log_info(&ctx, "some info\n");
-    log_debug(&ctx, "some debug\n");
-    log_warn(&ctx, "some warn\n");
-    log_error(&ctx, "some err\n");
-
-
-    
+    get_std_logger(&ctx);    
+    if (argc < 2) {
+        print_usage();
+        return;
+    }
     struct Process* p = calloc(1, sizeof(struct Process));
-    start_process("process.yaml", p);
+    start_process(argv[1], p);
     free_process(p);
 }

@@ -33,7 +33,7 @@ int isoproc(void* p) {
 
     if( chdir(process->ContextDir) != 0 ) {
         log_error(&ctx, "error chdir\n");
-        graceful_exit(process, "error chdir to context directory\n" ,1);
+        graceful_exit(process, "error chdir to context directory" ,1);
     }
 
     prepare_mntns(process);
@@ -42,22 +42,22 @@ int isoproc(void* p) {
     int status;
     int pid = fork();
     if ( pid == -1 ){
-        log_error(&ctx, "error forking");
+        log_error(&ctx, "error forking\n");
         graceful_exit(process, "error forking the job process", 1);
     } else if ( pid == 0 ) {
-        log_info(&ctx, "executing child");
+        log_info(&ctx, "executing child\n");
         execute_job(process);
-        log_info(&ctx, "child exec finished");
+        log_info(&ctx, "child exec finished\n");
         return 0;
     } else {
-        log_info(&ctx, "monitoring child proc");
+        log_info(&ctx, "monitoring child proc\n");
         while(1) {
             waitpid(pid, &status, WNOHANG);
             if (WIFEXITED(status)) {
-                log_info(&ctx, "child executed successfully");
+                log_info(&ctx, "child executed successfully\n");
                 graceful_exit(process, "child exited successfully", 1);
             } else if (WIFSIGNALED(status)) {
-                log_info(&ctx, "child terminated with signal");
+                log_info(&ctx, "child terminated with signal\n");
                 graceful_exit(process, "error in child", 1);
             }         
             sleep(1);
@@ -81,33 +81,33 @@ void prepare_mntns(struct Process* proc) {
     proc->Rootfs = mntfs;
 
     if ( mount(proc->Rootfs, mntfs, "ext4", MS_BIND, "")) {
-        graceful_exit(proc, "error mounting\n", 1);
+        graceful_exit(proc, "error mounting", 1);
     } 
     printf("mounted rootfs\n");
 
     if ( chdir(mntfs) ) {
-        graceful_exit(proc, "error chdir\n", 1);
+        graceful_exit(proc, "error chdir", 1);
     }
     printf("changed dir to: %s\n", mntfs);
 
     const char* put_old = ".put_old";
     if( mkdir(put_old, 0777) && errno != EEXIST ) {
-        graceful_exit(proc, "error creating the putold directory\n", 1);
+        graceful_exit(proc, "error creating the putold directory", 1);
     }
     printf("created .put_old\n");
 
     if ( syscall(SYS_pivot_root, ".", put_old) == -1 ) {  
-        graceful_exit(proc, "error pivoting root\n", 1);
+        graceful_exit(proc, "error pivoting root", 1);
     }
     printf("performed sys_pivot\n");
 
     if ( chdir("/") ) {
-        graceful_exit(proc, "error chdir to root\n", 1);
+        graceful_exit(proc, "error chdir to root", 1);
     }
-    printf("chdir to root successful\n");
+    printf("chdir to root successful");
 
     
-    printf("proc initial setup done\n");
+    printf("proc initial setup done");
 
 }
 
