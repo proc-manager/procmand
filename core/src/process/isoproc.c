@@ -33,6 +33,12 @@ void prepare_procfs(struct Process* proc) {
     }
 }
 
+
+void prepare_utsns() {
+    sethostname("isoproc", strlen("isoproc"));
+}
+
+
 int isoproc(void* p) {
 
     // init process 
@@ -53,6 +59,7 @@ int isoproc(void* p) {
 
     prepare_mntns(process);
     overwrite_env(process);
+    prepare_utsns();
 
     int status;
     int pid = fork();
@@ -150,9 +157,6 @@ void prepare_mntns(struct Process* proc) {
     printf("proc initial setup done");
 
 }
-
-
-
 
 
 void overwrite_env(struct Process* proc) {

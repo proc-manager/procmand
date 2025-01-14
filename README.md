@@ -7,8 +7,8 @@ The c-level implementation of the procman daemon.
 ### Prepare Namespaces
 
 - [x] Mnt
-- [ ] Pid
-- [ ] Uts
+- [x] Pid
+- [x] Uts
 - [ ] Net
 - [ ] User
 - [ ] Cgroup? 
