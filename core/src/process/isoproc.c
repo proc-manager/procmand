@@ -96,7 +96,7 @@ void prepare_mntns(struct Process* proc) {
     }
     printf("created .put_old\n");
 
-    if ( syscall(SYS_pivot_root, ".", put_old) ) {  
+    if ( syscall(SYS_pivot_root, mntfs, put_old) ) {  
         graceful_exit(proc, "error pivoting root", 1);
     }
     printf("performed sys_pivot\n");
@@ -106,6 +106,9 @@ void prepare_mntns(struct Process* proc) {
     }
     printf("chdir to root successful");
 
+    if(umount2(put_old, MNT_DETACH)) {
+        graceful_exit(proc, "failed to umount put_old", 1);
+    }
     
     printf("proc initial setup done");
 
