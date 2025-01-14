@@ -17,6 +17,9 @@
 #include "helper.h"
 #include "common/logger.h"
 
+static int pivot_root(const char* new_root, const char* put_old) {
+    return syscall(SYS_pivot_root, new_root, put_old);
+}
 
 int isoproc(void* p) {
 
@@ -33,7 +36,7 @@ int isoproc(void* p) {
 
     if( chdir(process->ContextDir) != 0 ) {
         log_error(&ctx, "error chdir\n");
-        graceful_exit(process, "error chdir to context directory" ,1);
+        graceful_exit(process, "error chdir to context directory\n" ,1);
     }
 
     prepare_mntns(process);
@@ -43,7 +46,7 @@ int isoproc(void* p) {
     int pid = fork();
     if ( pid == -1 ){
         log_error(&ctx, "error forking\n");
-        graceful_exit(process, "error forking the job process", 1);
+        graceful_exit(process, "error forking the job process\n", 1);
     } else if ( pid == 0 ) {
         log_info(&ctx, "executing child\n");
         execute_job(process);
@@ -67,6 +70,9 @@ int isoproc(void* p) {
 }
 
 
+
+
+
 void prepare_mntns(struct Process* proc) {
     char buffer[150];
     char* mntfs;
@@ -79,37 +85,56 @@ void prepare_mntns(struct Process* proc) {
 
     mntfs = strdup(buffer);
     proc->Rootfs = mntfs;
+    memset(buffer, 0, sizeof(buffer));
 
-    if ( mount(proc->Rootfs, mntfs, "ext4", MS_BIND, "")) {
-        graceful_exit(proc, "error mounting", 1);
+    if (mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL) == -1) {
+        graceful_exit(proc, "err shared propagation\n", 1);
+    }
+
+    if ( mount(proc->Rootfs, proc->Rootfs, "ext4", MS_BIND, "") == -1) {
+        graceful_exit(proc, "error mounting - ms_bind", 1);
     } 
     printf("mounted rootfs\n");
 
-    if ( chdir(mntfs) ) {
+    if ( chdir(proc->ContextDir) ) {
         graceful_exit(proc, "error chdir", 1);
     }
-    printf("changed dir to: %s\n", mntfs);
+    printf("changed dir to: %s\n", proc->ContextDir);
 
-    const char* put_old = ".put_old";
-    if( mkdir(put_old, 0777) && errno != EEXIST ) {
+    if( sprintf(buffer, "%s/%s", proc->Rootfs, ".put_old") < 0 ) {
+        graceful_exit(proc, "error copying put_old to buf\n", 1);
+    }
+    const char* put_old = strdup(buffer);
+    memset(buffer, 0, sizeof(buffer));
+    if( mkdir(put_old, 0777) == -1 ) {
         graceful_exit(proc, "error creating the putold directory", 1);
     }
-    printf("created .put_old\n");
+    printf("created %s\n", put_old);
 
-    if ( syscall(SYS_pivot_root, mntfs, put_old) ) {  
+    printf("\ncalling pivot root with: %s, %s", proc->Rootfs, put_old);
+    if ( pivot_root(proc->Rootfs, put_old) == -1 ) {  
+        free(put_old);
         graceful_exit(proc, "error pivoting root", 1);
     }
     printf("performed sys_pivot\n");
 
-    if ( chdir("/") ) {
+    if ( chdir("/") == -1 ) {
+        free(put_old);
         graceful_exit(proc, "error chdir to root", 1);
     }
     printf("chdir to root successful");
 
-    if(umount2(put_old, MNT_DETACH)) {
+    if(umount2(put_old, MNT_DETACH) == -1) {
+        free(put_old);
         graceful_exit(proc, "failed to umount put_old", 1);
     }
-    
+
+    if (rmdir(put_old) == -1) {
+        free(put_old);
+        graceful_exit(proc, "rmdir", 1);
+    }
+
+    free(put_old); 
     printf("proc initial setup done");
 
 }
