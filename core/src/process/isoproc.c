@@ -21,6 +21,18 @@ static int pivot_root(const char* new_root, const char* put_old) {
     return syscall(SYS_pivot_root, new_root, put_old);
 }
 
+
+void prepare_procfs(struct Process* proc) { 
+    // should be executed inside the child 
+    if( mkdir("/proc", 0555) == -1 ) {
+        graceful_exit(proc, "err mkdir proc", 1);
+    }
+
+    if( mount("proc", "/proc", "proc", 0, "") == -1 ) {
+        graceful_exit(proc, "err mount", 1);
+    }
+}
+
 int isoproc(void* p) {
 
     // init process 
@@ -140,16 +152,7 @@ void prepare_mntns(struct Process* proc) {
 }
 
 
-void prepare_procfs(struct Process* proc) { 
-    // should be executed inside the child 
-    if( mkdir("/proc", 0555) == -1 ) {
-        graceful_exit(proc, "err mkdir proc", 1);
-    }
 
-    if( mount("proc", "/proc", "proc", 0, "") == -1 ) {
-        graceful_exit(proc, "err mount", 1);
-    }
-}
 
 
 void overwrite_env(struct Process* proc) {
