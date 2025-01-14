@@ -104,7 +104,7 @@ void prepare_mntns(struct Process* proc) {
     if( sprintf(buffer, "%s/%s", proc->Rootfs, ".put_old") < 0 ) {
         graceful_exit(proc, "error copying put_old to buf\n", 1);
     }
-    const char* put_old = strdup(buffer);
+    char* put_old = strdup(buffer);
     memset(buffer, 0, sizeof(buffer));
     if( mkdir(put_old, 0777) == -1 ) {
         graceful_exit(proc, "error creating the putold directory", 1);
