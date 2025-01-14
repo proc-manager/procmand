@@ -124,12 +124,12 @@ void prepare_mntns(struct Process* proc) {
     }
     printf("chdir to root successful");
 
-    if(umount2(put_old, MNT_DETACH) == -1) {
+    if(umount2(".put_old", MNT_DETACH) == -1) {
         free(put_old);
         graceful_exit(proc, "failed to umount put_old", 1);
     }
 
-    if (rmdir(put_old) == -1) {
+    if (rmdir(".put_old") == -1) {
         free(put_old);
         graceful_exit(proc, "rmdir", 1);
     }
