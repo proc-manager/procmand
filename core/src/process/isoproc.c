@@ -24,7 +24,7 @@ static int pivot_root(const char* new_root, const char* put_old) {
 
 void prepare_procfs(struct Process* proc) { 
     // should be executed inside the child 
-    if( mkdir("/proc", 0555) == -1 ) {
+    if( mkdir("/proc", 0555) == -1 && errno != EEXIST ) {
         graceful_exit(proc, "err mkdir proc", 1);
     }
 
