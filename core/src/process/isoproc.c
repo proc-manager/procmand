@@ -50,12 +50,13 @@ int isoproc(void* p) {
     } else if ( pid == 0 ) {
         log_info(&ctx, "executing child\n");
         execute_job(process);
-        log_info(&ctx, "child exec finished\n");
+        log_info(&ctx, "child exec finished\n"); 
         return 0;
     } else {
         log_info(&ctx, "monitoring child proc\n");
+        sleep(1);
         while(1) {
-            waitpid(pid, &status, WNOHANG);
+            waitpid(pid, &status, 0);
             if (WIFEXITED(status)) {
                 log_info(&ctx, "child executed successfully\n");
                 graceful_exit(process, "child exited successfully", 1);
@@ -159,7 +160,7 @@ void overwrite_env(struct Process* proc) {
         }
     }
 
-    printf("env overwrite success");
+    printf("env overwrite success\n");
     
 }
 
@@ -174,6 +175,6 @@ void execute_job(struct Process* proc) {
         graceful_exit(proc, "execvp failed", 1);
     }
 
-    graceful_exit(proc, "success", 0);
+    graceful_exit(proc, "success\n", 0);
 
 }

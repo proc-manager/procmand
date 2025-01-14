@@ -48,7 +48,7 @@ void start_process(char* process_yaml_loc, struct Process* p) {
 
 
 void print_usage() {
-    printf("\nUsage: procman <filepath>\n");
+    printf("\nUsage: sudo ./procmand <filepath>\n");
 }
 
 
