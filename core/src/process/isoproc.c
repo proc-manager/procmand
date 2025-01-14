@@ -71,9 +71,6 @@ int isoproc(void* p) {
 }
 
 
-
-
-
 void prepare_mntns(struct Process* proc) {
     char buffer[150];
     char* mntfs;
@@ -125,6 +122,8 @@ void prepare_mntns(struct Process* proc) {
     }
     printf("chdir to root successful");
 
+    prepare_procfs(proc);
+
     if(umount2(".put_old", MNT_DETACH) == -1) {
         free(put_old);
         graceful_exit(proc, "failed to umount put_old", 1);
@@ -141,6 +140,18 @@ void prepare_mntns(struct Process* proc) {
 }
 
 
+void prepare_procfs(struct Process* proc) { 
+    // should be executed inside the child 
+    if( mkdir("/proc", 0555) == -1 ) {
+        graceful_exit(proc, "err mkdir proc", 1);
+    }
+
+    if( mount("proc", "/proc", "proc", 0, "") == -1 ) {
+        graceful_exit(proc, "err mount", 1);
+    }
+}
+
+
 void overwrite_env(struct Process* proc) {
 
     printf("overwriting env\n");
@@ -150,13 +161,13 @@ void overwrite_env(struct Process* proc) {
     }
 
     if ( clearenv() ) {
-        graceful_exit(proc, "error clearenv", 1);
+        graceful_exit(proc, "error clearenv\n", 1);
     }
 
     struct ProcessEnv* env = proc->Env;
     for(int i=0; i< env->count; i++) {
         if( setenv(env->env[i]->Key, env->env[i]->Val, 1) ) {
-            graceful_exit(proc, "error setenv", 1);
+            graceful_exit(proc, "error setenv\n", 1);
         }
     }
 

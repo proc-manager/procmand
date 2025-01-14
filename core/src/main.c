@@ -26,7 +26,7 @@ void start_process(char* process_yaml_loc, struct Process* p) {
         exit(1);
     }
 
-    int clone_flags = SIGCHLD | CLONE_NEWNS;
+    int clone_flags = SIGCHLD | CLONE_NEWNS | CLONE_NEWPID;
     char* cmd_stack = malloc(STACKSIZE);
 
     pid_t pid = clone(isoproc, cmd_stack + STACKSIZE, clone_flags, (void*)p);

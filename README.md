@@ -6,7 +6,7 @@ The c-level implementation of the procman daemon.
 
 ### Prepare Namespaces
 
-- [ ] Mnt
+- [x] Mnt
 - [ ] Pid
 - [ ] Uts
 - [ ] Net
