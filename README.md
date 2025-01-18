@@ -1,5 +1,6 @@
 # procmand
-The c-level implementation of the procman daemon. 
+
+Daemon that manages processes in a container-like environment. 
 
 
 ## Todo 
@@ -9,6 +10,6 @@ The c-level implementation of the procman daemon.
 - [x] Mnt
 - [x] Pid
 - [x] Uts
-- [ ] Net
 - [ ] User
+- [ ] Net
 - [ ] Cgroup? 

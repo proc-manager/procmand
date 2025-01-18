@@ -17,25 +17,36 @@
 #include "helper.h"
 #include "common/logger.h"
 
+
 static int pivot_root(const char* new_root, const char* put_old) {
     return syscall(SYS_pivot_root, new_root, put_old);
 }
 
 
-void prepare_procfs(struct Process* proc) { 
-    // should be executed inside the child 
-    if( mkdir("/proc", 0555) == -1 && errno != EEXIST ) {
-        graceful_exit(proc, "err mkdir proc", 1);
+static int write_file(char path[100], char line[100])
+{
+    FILE *f = fopen(path, "w");
+
+    if (f == NULL) {
+        return -1;         
     }
 
-    if( mount("proc", "/proc", "proc", 0, "") == -1 ) {
-        graceful_exit(proc, "err mount", 1);
+    if (fwrite(line, 1, strlen(line), f) < 0) {
+        return -1;
     }
+
+    if (fclose(f) != 0) {
+        return -1;
+    }
+    return 0;
 }
 
 
-void prepare_utsns() {
-    sethostname("isoproc", strlen("isoproc"));
+static void await_setup(struct Process* p) {
+    char buf[2];
+    if( read(p->fd[0], buf, 2) != 2 ) {
+        graceful_exit(p, "error await setup", 1);
+    }
 }
 
 
@@ -52,14 +63,21 @@ int isoproc(void* p) {
 
     struct Process* process = (struct Process*)p;
 
-    if( chdir(process->ContextDir) != 0 ) {
-        log_error(&ctx, "error chdir\n");
-        graceful_exit(process, "error chdir to context directory\n" ,1);
-    }
-
     prepare_mntns(process);
     overwrite_env(process);
     prepare_utsns();
+
+    // signal the parent that mnt,proc,env,uts setup is done
+    if(write(process->fd[1], "OK", 2) != 2) {
+        log_error(&ctx, "error writing to pipe");
+        graceful_exit(process, "error writing to pipe", 1);
+    }
+
+    // now wait for user and net namespaces to be created
+    if(read(process->fd[0], "OK", 2) != 2) {
+        log_error(&ctx, "error reading from pipe");
+        graceful_exit(process, "error reading from pipe");
+    }
 
     int status;
     int pid = fork();
@@ -68,13 +86,15 @@ int isoproc(void* p) {
         graceful_exit(process, "error forking the job process\n", 1);
     } else if ( pid == 0 ) {
         log_info(&ctx, "executing child\n");
+        await_setup(p);
         execute_job(process);
         log_info(&ctx, "child exec finished\n"); 
         return 0;
     } else {
         log_info(&ctx, "monitoring child proc\n");
-        sleep(1);
+
         while(1) {
+            sleep(1);
             waitpid(pid, &status, 0);
             if (WIFEXITED(status)) {
                 log_info(&ctx, "child executed successfully\n");
@@ -83,7 +103,6 @@ int isoproc(void* p) {
                 log_info(&ctx, "child terminated with signal\n");
                 graceful_exit(process, "error in child", 1);
             }         
-            sleep(1);
         } 
     }
     return 0;
@@ -182,8 +201,8 @@ void overwrite_env(struct Process* proc) {
     
 }
 
-void execute_job(struct Process* proc) {
 
+void execute_job(struct Process* proc) {
 
     struct ProcessJob* job = proc->Job;
     struct ProcessJobCommand* cmd = job->Command;
@@ -195,4 +214,56 @@ void execute_job(struct Process* proc) {
 
     graceful_exit(proc, "success\n", 0);
 
+}
+
+void prepare_procfs(struct Process* proc) { 
+    // should be executed inside the child 
+    if( mkdir("/proc", 0555) == -1 && errno != EEXIST ) {
+        graceful_exit(proc, "err mkdir proc", 1);
+    }
+
+    if( mount("proc", "/proc", "proc", 0, "") == -1 ) {
+        graceful_exit(proc, "err mount", 1);
+    }
+}
+
+
+void prepare_utsns() {
+    sethostname("isoproc", strlen("isoproc"));
+}
+
+
+
+void prepare_userns(struct Process* proc) {
+    struct LogContext ctx; 
+    get_std_logger(&ctx); 
+
+    log_info(&ctx, "creating userns\n");
+
+    char path[250];
+    char line[100];
+
+    int uid = 1000; // let's just go with this
+
+    sprintf(path, "/proc/%d/uid_map", proc->Pid);
+    sprintf(line, "0 %d 1\n", uid);
+    if(write_file(path, line) != 0) {
+        log_error(&ctx, "error writing to proc uid map");
+        graceful_exit(proc, "error writing to proc uid map", 1);
+    }
+
+    sprintf(path, "/proc/%d/setgroups", proc->Pid);
+    sprintf(line, "deny");
+    if(write_file(path, line) != 0) {
+        log_error(&ctx, "error writing to proc uid map");
+        graceful_exit(proc, "error writing to proc uid map", 1);
+    }
+
+    sprintf(path, "/proc/%d/gid_map", proc->Pid);
+    sprintf(line, "0 %d 1\n", uid);
+    if(write_file(path, line) != 0) {
+        log_error(&ctx, "error writing to proc uid map");
+        graceful_exit(proc, "error writing to proc uid map", 1);
+    }
+    
 }
