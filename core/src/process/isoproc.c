@@ -76,7 +76,7 @@ int isoproc(void* p) {
     // now wait for user and net namespaces to be created
     if(read(process->fd[0], "OK", 2) != 2) {
         log_error(&ctx, "error reading from pipe");
-        graceful_exit(process, "error reading from pipe");
+        graceful_exit(process, "error reading from pipe", 1);
     }
 
     int status;
