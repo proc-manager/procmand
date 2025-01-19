@@ -41,7 +41,7 @@ void start_process(char* process_yaml_loc, struct Process* p) {
 
     if( pipe(p->fd) < 0 ) {
         log_error(&ctx, "error pipe\n");
-        graceful_exit(p, "error pipe", 1);
+        graceful_exit(p, "error pipe\n", 1);
     }
 
     pid_t pid = clone(isoproc, cmd_stack + STACKSIZE, clone_flags, (void*)p);
@@ -55,8 +55,8 @@ void start_process(char* process_yaml_loc, struct Process* p) {
     char buf[2];
     // wait for the mntfs to succeed
     if( read(p->fd[0], buf, 2) != 2 ) {
-        log_error(&ctx, "error reading from fd");
-        graceful_exit(p, "error reading pipe", 1);
+        log_error(&ctx, "error reading from fd\n");
+        graceful_exit(p, "error reading pipe\n", 1);
     }
 
     prepare_userns(p);
@@ -64,15 +64,15 @@ void start_process(char* process_yaml_loc, struct Process* p) {
     p->Stack = cmd_stack;   
 
     if( write(p->fd[1], "OK", 2) != 2 ) {
-        log_error(&ctx, "error writing to pipe");
-        graceful_exit(p, "error writing to pipe", 1);
+        log_error(&ctx, "error writing to pipe\n");
+        graceful_exit(p, "error writing to pipe\n", 1);
     }
 
     if( waitpid(pid, NULL, 0) == -1 ) {
-        graceful_exit(p, "waitpid failed", 1);
+        graceful_exit(p, "waitpid failed\n", 1);
     }
 
-    graceful_exit(p, "success", 0);
+    graceful_exit(p, "success\n", 0);
 }
 
 
@@ -95,23 +95,26 @@ int main(int argc, char* argv[]) {
         perror("error fork");
         exit(1);
     } else if( pid == 0 ) {
-        log_info(&ctx, "child: process started");
+        log_info(&ctx, "child: process started\n");
         struct Process* p = calloc(1, sizeof(struct Process));
         start_process(argv[1], p);
         free_process(p);
-        log_info(&ctx, "child: process finished");
+        log_info(&ctx, "child: process finished\n");
     } else {
-        log_info(&ctx, "parent: waiting for child");
+        log_info(&ctx, "parent: waiting for child\n");
         int status;
         while(1) {
             sleep(1);
             waitpid(pid, &status, 0);
             if (WIFEXITED(status)) {
                 log_info(&ctx, "child executed successfully\n");
+                break;
             } else if (WIFSIGNALED(status)) {
                 log_error(&ctx, "child terminated with signal\n");
+                break;
             }         
         } 
+        free_process(p);
     }
 
     return 0;

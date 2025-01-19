@@ -45,7 +45,7 @@ static int write_file(char path[100], char line[100])
 static void await_setup(struct Process* p) {
     char buf[2];
     if( read(p->fd[0], buf, 2) != 2 ) {
-        graceful_exit(p, "error await setup", 1);
+        graceful_exit(p, "error await setup\n", 1);
     }
 }
 
@@ -69,14 +69,14 @@ int isoproc(void* p) {
 
     // signal the parent that mnt,proc,env,uts setup is done
     if(write(process->fd[1], "OK", 2) != 2) {
-        log_error(&ctx, "error writing to pipe");
-        graceful_exit(process, "error writing to pipe", 1);
+        log_error(&ctx, "error writing to pipe\n");
+        graceful_exit(process, "error writing to pipe\n", 1);
     }
 
     // now wait for user and net namespaces to be created
     if(read(process->fd[0], "OK", 2) != 2) {
-        log_error(&ctx, "error reading from pipe");
-        graceful_exit(process, "error reading from pipe", 1);
+        log_error(&ctx, "error reading from pipe\n");
+        graceful_exit(process, "error reading from pipe\n", 1);
     }
 
     int status;
@@ -98,10 +98,10 @@ int isoproc(void* p) {
             waitpid(pid, &status, 0);
             if (WIFEXITED(status)) {
                 log_info(&ctx, "child executed successfully\n");
-                graceful_exit(process, "child exited successfully", 1);
+                graceful_exit(process, "child exited successfully\n", 1);
             } else if (WIFSIGNALED(status)) {
                 log_info(&ctx, "child terminated with signal\n");
-                graceful_exit(process, "error in child", 1);
+                graceful_exit(process, "error in child\n", 1);
             }         
         } 
     }
@@ -128,7 +128,7 @@ void prepare_mntns(struct Process* proc) {
     }
 
     if ( mount(proc->Rootfs, proc->Rootfs, "ext4", MS_BIND, "") == -1) {
-        graceful_exit(proc, "error mounting - ms_bind", 1);
+        graceful_exit(proc, "error mounting - ms_bind\n", 1);
     } 
     printf("mounted rootfs\n");
 
@@ -143,37 +143,37 @@ void prepare_mntns(struct Process* proc) {
     char* put_old = strdup(buffer);
     memset(buffer, 0, sizeof(buffer));
     if( mkdir(put_old, 0777) == -1 ) {
-        graceful_exit(proc, "error creating the putold directory", 1);
+        graceful_exit(proc, "error creating the putold directory\n", 1);
     }
     printf("created %s\n", put_old);
 
-    printf("\ncalling pivot root with: %s, %s", proc->Rootfs, put_old);
+    printf("\ncalling pivot root with: %s, %s\n", proc->Rootfs, put_old);
     if ( pivot_root(proc->Rootfs, put_old) == -1 ) {  
         free(put_old);
-        graceful_exit(proc, "error pivoting root", 1);
+        graceful_exit(proc, "error pivoting root\n", 1);
     }
     printf("performed sys_pivot\n");
 
     if ( chdir("/") == -1 ) {
         free(put_old);
-        graceful_exit(proc, "error chdir to root", 1);
+        graceful_exit(proc, "error chdir to root\n", 1);
     }
-    printf("chdir to root successful");
+    printf("chdir to root successful\n");
 
     prepare_procfs(proc);
 
     if(umount2(".put_old", MNT_DETACH) == -1) {
         free(put_old);
-        graceful_exit(proc, "failed to umount put_old", 1);
+        graceful_exit(proc, "failed to umount put_old\n", 1);
     }
 
     if (rmdir(".put_old") == -1) {
         free(put_old);
-        graceful_exit(proc, "rmdir", 1);
+        graceful_exit(proc, "rmdir\n", 1);
     }
 
     free(put_old); 
-    printf("proc initial setup done");
+    printf("proc initial setup done\n");
 
 }
 
@@ -209,7 +209,7 @@ void execute_job(struct Process* proc) {
     printf("executing job: %s\n", job->Name);
 
     if ( execvp(cmd->command, cmd->args) == -1 ) {
-        graceful_exit(proc, "execvp failed", 1);
+        graceful_exit(proc, "execvp failed\n", 1);
     }
 
     graceful_exit(proc, "success\n", 0);
@@ -219,11 +219,11 @@ void execute_job(struct Process* proc) {
 void prepare_procfs(struct Process* proc) { 
     // should be executed inside the child 
     if( mkdir("/proc", 0555) == -1 && errno != EEXIST ) {
-        graceful_exit(proc, "err mkdir proc", 1);
+        graceful_exit(proc, "err mkdir proc\n", 1);
     }
 
     if( mount("proc", "/proc", "proc", 0, "") == -1 ) {
-        graceful_exit(proc, "err mount", 1);
+        graceful_exit(proc, "err mount\n", 1);
     }
 }
 
@@ -248,22 +248,22 @@ void prepare_userns(struct Process* proc) {
     sprintf(path, "/proc/%d/uid_map", proc->Pid);
     sprintf(line, "0 %d 1\n", uid);
     if(write_file(path, line) != 0) {
-        log_error(&ctx, "error writing to proc uid map");
-        graceful_exit(proc, "error writing to proc uid map", 1);
+        log_error(&ctx, "error writing to proc uid map\n");
+        graceful_exit(proc, "error writing to proc uid map\n", 1);
     }
 
     sprintf(path, "/proc/%d/setgroups", proc->Pid);
     sprintf(line, "deny");
     if(write_file(path, line) != 0) {
-        log_error(&ctx, "error writing to proc uid map");
-        graceful_exit(proc, "error writing to proc uid map", 1);
+        log_error(&ctx, "error writing to proc uid map\n");
+        graceful_exit(proc, "error writing to proc uid map\n", 1);
     }
 
     sprintf(path, "/proc/%d/gid_map", proc->Pid);
     sprintf(line, "0 %d 1\n", uid);
     if(write_file(path, line) != 0) {
-        log_error(&ctx, "error writing to proc uid map");
-        graceful_exit(proc, "error writing to proc uid map", 1);
+        log_error(&ctx, "error writing to proc uid map\n");
+        graceful_exit(proc, "error writing to proc uid map\n", 1);
     }
     
 }
