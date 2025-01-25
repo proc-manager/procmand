@@ -55,6 +55,7 @@ int isoproc(void* p) {
     // init process 
     // this process sets up the namespace and monitors the child process
     // it exits the namespace once there are no children
+    char buf[2];
 
     struct LogContext ctx; 
     get_std_logger(&ctx);
@@ -74,7 +75,7 @@ int isoproc(void* p) {
     }
 
     // now wait for user and net namespaces to be created
-    if(read(process->fd[0], "OK", 2) != 2) {
+    if(read(process->fd[0], buf, 2) != 2) {
         log_error(&ctx, "isoproc: error reading from pipe\n");
         graceful_exit(process, "isoproc: error reading from pipe\n", 1);
     }
