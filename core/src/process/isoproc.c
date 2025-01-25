@@ -209,6 +209,16 @@ void execute_job(struct Process* proc) {
     struct ProcessJobCommand* cmd = job->Command;
     printf("executing job: %s\n", job->Name);
 
+    if (dup2(stdin, STDIN_FILENO) == -1) {
+        graceful_exit(proc, "dup2 stdin failed\n", 1);
+    }
+    if (dup2(stdout, STDOUT_FILENO) == -1) {
+        graceful_exit(proc, "dup2 stdout failed\n", 1);
+    }
+    if (dup2(stderr, STDERR_FILENO) == -1) {
+        graceful_exit(proc, "dup2 stderr failed\n", 1);
+    }
+
     if ( execvp(cmd->command, cmd->args) == -1 ) {
         graceful_exit(proc, "execvp failed\n", 1);
     }
