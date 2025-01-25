@@ -31,7 +31,7 @@ static int write_file(char path[100], char line[100])
         return -1;         
     }
 
-    if (fwrite(line, 1, strlen(line), f) < 0) {
+    if (fwrite(line, 1, strlen(line), f)) {
         return -1;
     }
 
