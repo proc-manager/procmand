@@ -64,6 +64,17 @@ int isoproc(void* p) {
 
     struct Process* process = (struct Process*)p;
 
+    // Redirect stdin, stdout, and stderr
+    if (dup2(process->stdin_fd, STDIN_FILENO) == -1) {
+        graceful_exit(process, "dup2 stdin failed\n", 1);
+    }
+    if (dup2(process->stdout_fd, STDOUT_FILENO) == -1) {
+        graceful_exit(process, "dup2 stdout failed\n", 1);
+    }
+    if (dup2(process->stderr_fd, STDERR_FILENO) == -1) {
+        graceful_exit(process, "dup2 stderr failed\n", 1);
+    }
+
     prepare_mntns(process);
     overwrite_env(process);
     prepare_utsns();
@@ -208,17 +219,6 @@ void execute_job(struct Process* proc) {
     struct ProcessJob* job = proc->Job;
     struct ProcessJobCommand* cmd = job->Command;
     printf("executing job: %s\n", job->Name);
-
-    // Redirect stdin, stdout, and stderr
-    if (dup2(proc->stdin_fd, STDIN_FILENO) == -1) {
-        graceful_exit(proc, "dup2 stdin failed\n", 1);
-    }
-    if (dup2(proc->stdout_fd, STDOUT_FILENO) == -1) {
-        graceful_exit(proc, "dup2 stdout failed\n", 1);
-    }
-    if (dup2(proc->stderr_fd, STDERR_FILENO) == -1) {
-        graceful_exit(proc, "dup2 stderr failed\n", 1);
-    }
 
     if (execvp(cmd->command, cmd->args) == -1) {
         graceful_exit(proc, "execvp failed\n", 1);
