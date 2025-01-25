@@ -69,14 +69,14 @@ int isoproc(void* p) {
 
     // signal the parent that mnt,proc,env,uts setup is done
     if(write(process->fd[1], "OK", 2) != 2) {
-        log_error(&ctx, "error writing to pipe\n");
-        graceful_exit(process, "error writing to pipe\n", 1);
+        log_error(&ctx, "isoproc: error writing to pipe\n");
+        graceful_exit(process, "isoproc: error writing to pipe\n", 1);
     }
 
     // now wait for user and net namespaces to be created
     if(read(process->fd[0], "OK", 2) != 2) {
-        log_error(&ctx, "error reading from pipe\n");
-        graceful_exit(process, "error reading from pipe\n", 1);
+        log_error(&ctx, "isoproc: error reading from pipe\n");
+        graceful_exit(process, "isoproc: error reading from pipe\n", 1);
     }
 
     int status;
