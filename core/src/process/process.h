@@ -70,6 +70,7 @@ struct Process {
     // params from outside the yaml 
 
     int fd[2];
+    int stdin_fd, stdout_fd, stderr_fd;
     char* Stack; // the allocated stack - must be freed
     char* Rootfs; // pointer to rootfs 
     int ExitStatus; // exit status
