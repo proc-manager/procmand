@@ -127,6 +127,11 @@ void prepare_mntns(struct Process* proc) {
 
     printf("preparing mntns\n");
 
+    if (geteuid() != 0) {
+        fprintf(stderr, "ayo why you not running as root?\n");
+        graceful_exit(proc, "go back and run as root", 1);
+    }
+
     if ( sprintf(buffer, "%s/%s", proc->ContextDir, "rootfs") < 0 ) {
         graceful_exit(proc, "error copying rootfs path to buf\n", 1);
     }
