@@ -39,7 +39,8 @@ void start_process(char* process_yaml_loc, struct Process* p) {
         graceful_exit(p, "error chdir to context directory\n" ,1);
     }
 
-    if( pipe(p->fd) < 0 ) {
+
+    if( pipe(p->fd) < 0 || pipe(p->stdin_fd) < 0 || pipe(p->stdout_fd) || pipe(p->stderr_fd) ) {
         log_error(&ctx, "error pipe\n");
         graceful_exit(p, "error pipe\n", 1);
     }
@@ -51,7 +52,13 @@ void start_process(char* process_yaml_loc, struct Process* p) {
         exit(EXIT_FAILURE);
     }
 
+    // parent still 
     p->Pid = pid;
+
+    close(p->stdin_fd[0]);
+    close(p->stderr_fd[1]);
+    close(p->stdout_fd[1]);
+
     char buf[2];
     // wait for the mntfs to succeed
     if( read(p->fd[0], buf, 2) != 2 ) {

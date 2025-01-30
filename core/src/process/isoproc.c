@@ -64,17 +64,6 @@ int isoproc(void* p) {
 
     struct Process* process = (struct Process*)p;
 
-    // Redirect stdin, stdout, and stderr
-    if (dup2(process->stdin_fd, STDIN_FILENO) == -1) {
-        graceful_exit(process, "dup2 stdin failed\n", 1);
-    }
-    if (dup2(process->stdout_fd, STDOUT_FILENO) == -1) {
-        graceful_exit(process, "dup2 stdout failed\n", 1);
-    }
-    if (dup2(process->stderr_fd, STDERR_FILENO) == -1) {
-        graceful_exit(process, "dup2 stderr failed\n", 1);
-    }
-
     // signal the parent that mnt,proc,env,uts setup is done
     if(write(process->fd[1], "OK", 2) != 2) {
         log_error(&ctx, "isoproc: error writing to pipe\n");
@@ -99,6 +88,26 @@ int isoproc(void* p) {
     } else if ( pid == 0 ) {
         log_info(&ctx, "executing child\n");
         await_setup(p);
+
+        close(process->stdin_fd[1]);
+        close(process->stdout_fd[0]);
+        close(process->stderr_fd[0]);
+
+        // Redirect stdin, stdout, and stderr
+        if (dup2(process->stdin_fd[0], STDIN_FILENO) == -1) {
+            graceful_exit(process, "dup2 stdin failed\n", 1);
+        }
+        if (dup2(process->stdout_fd[1], STDOUT_FILENO) == -1) {
+            graceful_exit(process, "dup2 stdout failed\n", 1);
+        }
+        if (dup2(process->stderr_fd[1], STDERR_FILENO) == -1) {
+            graceful_exit(process, "dup2 stderr failed\n", 1);
+        }
+
+        close(process->stdin_fd[0]);
+        close(process->stdout_fd[1]);
+        close(process->stderr_fd[1]);
+        
         execute_job(process);
         log_info(&ctx, "child exec finished\n"); 
         return 0;
