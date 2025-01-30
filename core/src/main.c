@@ -39,12 +39,6 @@ void start_process(char* process_yaml_loc, struct Process* p) {
         graceful_exit(p, "error chdir to context directory\n" ,1);
     }
 
-
-    if( pipe(p->fd) < 0 || pipe(p->stdin_fd) < 0 || pipe(p->stdout_fd) || pipe(p->stderr_fd) ) {
-        log_error(&ctx, "error pipe\n");
-        graceful_exit(p, "error pipe\n", 1);
-    }
-
     pid_t pid = clone(isoproc, cmd_stack + STACKSIZE, clone_flags, (void*)p);
     if (pid == -1){
         perror("clone");
@@ -55,9 +49,7 @@ void start_process(char* process_yaml_loc, struct Process* p) {
     // parent still 
     p->Pid = pid;
 
-    close(p->stdin_fd[0]);
-    close(p->stderr_fd[1]);
-    close(p->stdout_fd[1]);
+
 
     char buf[2];
     // wait for the mntfs to succeed
@@ -96,14 +88,23 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    struct Process* p = calloc(1, sizeof(struct Process));
+    if( pipe(p->fd) < 0 || pipe(p->stdin_fd) < 0 || pipe(p->stdout_fd) || pipe(p->stderr_fd) ) {
+        log_error(&ctx, "error pipe\n");
+        graceful_exit(p, "error pipe\n", 1);
+    }
+
+    close(p->stdin_fd[0]);
+    close(p->stderr_fd[1]);
+    close(p->stdout_fd[1]);
+
     // to unblock the daemon from waiting for one process
     pid_t pid = fork();
     if( pid < 0 ) {
-        perror("error fork");
-        exit(1);
+        perror("error fork\n");
+        graceful_exit(p, "err fork\n", 1);
     } else if( pid == 0 ) {
         log_info(&ctx, "child: process started\n");
-        struct Process* p = calloc(1, sizeof(struct Process));
         start_process(argv[1], p);
         free_process(p);
         log_info(&ctx, "child: process finished\n");
@@ -115,9 +116,11 @@ int main(int argc, char* argv[]) {
             waitpid(pid, &status, 0);
             if (WIFEXITED(status)) {
                 log_info(&ctx, "child executed successfully\n");
+                graceful_exit(p, "child executed successfully\n", 0);
                 break;
             } else if (WIFSIGNALED(status)) {
                 log_error(&ctx, "child terminated with signal\n");
+                graceful_exit(p, "child terminated with signal\n", 0);
                 break;
             }         
         } 
