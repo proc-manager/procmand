@@ -136,6 +136,9 @@ void prepare_mntns(struct Process* proc) {
     memset(buffer, 0, sizeof(buffer));
 
     if (mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL) == -1) {
+        if(errno == EPERM) {
+            fprintf(stderr, "operation is not permitted.\n");
+        }
         graceful_exit(proc, "err shared propagation\n", 1);
     }
 
