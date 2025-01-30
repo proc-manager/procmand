@@ -64,6 +64,10 @@ int isoproc(void* p) {
 
     struct Process* process = (struct Process*)p;
 
+    prepare_mntns(process);
+    overwrite_env(process);
+    prepare_utsns();
+
     // Redirect stdin, stdout, and stderr
     if (dup2(process->stdin_fd, STDIN_FILENO) == -1) {
         graceful_exit(process, "dup2 stdin failed\n", 1);
@@ -74,10 +78,6 @@ int isoproc(void* p) {
     if (dup2(process->stderr_fd, STDERR_FILENO) == -1) {
         graceful_exit(process, "dup2 stderr failed\n", 1);
     }
-
-    prepare_mntns(process);
-    overwrite_env(process);
-    prepare_utsns();
 
     // signal the parent that mnt,proc,env,uts setup is done
     if(write(process->fd[1], "OK", 2) != 2) {
