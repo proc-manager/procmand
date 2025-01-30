@@ -64,10 +64,6 @@ int isoproc(void* p) {
 
     struct Process* process = (struct Process*)p;
 
-    prepare_mntns(process);
-    overwrite_env(process);
-    prepare_utsns();
-
     // Redirect stdin, stdout, and stderr
     if (dup2(process->stdin_fd, STDIN_FILENO) == -1) {
         graceful_exit(process, "dup2 stdin failed\n", 1);
@@ -90,6 +86,10 @@ int isoproc(void* p) {
         log_error(&ctx, "isoproc: error reading from pipe\n");
         graceful_exit(process, "isoproc: error reading from pipe\n", 1);
     }
+
+    prepare_mntns(process);
+    overwrite_env(process);
+    prepare_utsns();
 
     int status;
     int pid = fork();
