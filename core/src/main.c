@@ -49,8 +49,6 @@ void start_process(char* process_yaml_loc, struct Process* p) {
     // parent still 
     p->Pid = pid;
 
-
-
     char buf[2];
     // wait for the mntfs to succeed
     if( read(p->fd[0], buf, 2) != 2 ) {
@@ -89,14 +87,7 @@ int main(int argc, char* argv[]) {
     }
 
     struct Process* p = calloc(1, sizeof(struct Process));
-    if( pipe(p->fd) < 0 || pipe(p->stdin_fd) < 0 || pipe(p->stdout_fd) || pipe(p->stderr_fd) ) {
-        log_error(&ctx, "error pipe\n");
-        graceful_exit(p, "error pipe\n", 1);
-    }
-
-    close(p->stdin_fd[0]);
-    close(p->stderr_fd[1]);
-    close(p->stdout_fd[1]);
+    
 
     // to unblock the daemon from waiting for one process
     pid_t pid = fork();
