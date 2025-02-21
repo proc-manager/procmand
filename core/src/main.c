@@ -50,20 +50,26 @@ void start_process(char* process_yaml_loc, struct Process* p) {
     p->Pid = pid;
 
     char buf[2];
+
+    printf("start_process> waiting to read from fd");
     // wait for the mntfs to succeed
     if( read(p->fd[0], buf, 2) != 2 ) {
         log_error(&ctx, "error reading from fd\n");
         graceful_exit(p, "error reading pipe\n", 1);
     }
+    printf("start_process> read from fd");
 
     prepare_userns(p);
     p->Pid = pid;
     p->Stack = cmd_stack;   
 
+
+    printf("start_process> writing to fd");
     if( write(p->fd[1], "OK", 2) != 2 ) {
         log_error(&ctx, "error writing to pipe\n");
         graceful_exit(p, "error writing to pipe\n", 1);
     }
+    printf("start_process> write to fd");
 
     if( waitpid(pid, NULL, 0) == -1 ) {
         graceful_exit(p, "waitpid failed\n", 1);
@@ -87,7 +93,10 @@ int main(int argc, char* argv[]) {
     }
 
     struct Process* p = calloc(1, sizeof(struct Process));
-    
+    if ( pipe(p->fd) ) {
+        log_error(&ctx, "error creating pipe");
+        graceful_exit(p, "error pipe\n", 1);
+    }
 
     // to unblock the daemon from waiting for one process
     pid_t pid = fork();
