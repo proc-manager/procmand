@@ -17,4 +17,5 @@ sudo nsenter --target <PID> --pid --mount --uts --preserve-credentials /bin/sh
 - [x] Uts
 - [ ] User
 - [ ] Net
-- [ ] Cgroup? 
+- [ ] Cgroups
+

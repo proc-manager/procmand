@@ -341,11 +341,11 @@ void parse_job_command(yaml_parser_t* parser, struct ProcessJobCommand* job) {
                     exit(1);
                 }
                 args[argc] = strdup((char*)event.data.scalar.value); 
-                argc = argc + 1;
-                if ( args == NULL ) {
+                if ( args[argc] == NULL ) {
                     perror("error realloc");
                     exit(1);
                 }
+                argc = argc + 1;
                 yaml_event_delete(&event);
                 break;
 
