@@ -17,4 +17,8 @@ git clone https://github.com/rutu-sh/procman && \
 
 sudo apt-get -y update && sudo apt-get install -y libyaml-dev gdb valgrind && \
     git clone https://github.com/rutu-sh/procmand && \
-    cd procmand/core 
+    cd procmand/core && \
+    make
+
+
+

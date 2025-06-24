@@ -31,7 +31,7 @@ void start_process(char* process_yaml_loc, struct Process* p) {
         graceful_exit(p, "error chdir", 1);
     }
 
-    int clone_flags = SIGCHLD | CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWUTS ;
+    int clone_flags = SIGCHLD | CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWUTS | CLONE_NEWNET;
     char* cmd_stack = malloc(STACKSIZE);
 
     if( chdir(p->ContextDir) != 0 ) {
