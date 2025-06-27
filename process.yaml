@@ -1,7 +1,7 @@
 id: 38f880df
 name: test-proc
 pid: 0
-contextDir: /var/lib/procman/proc/38f880df
+context_dir: /var/lib/procman/proc/38f880df
 image:
     id: 88b30c7c
     name: test-img
@@ -24,9 +24,9 @@ env:
     TERM: xterm-256color
 network:
     ports:
-        - hostPort: 8020
-          procPort: 3000
-        - hostPort: 8000
-          procPort: 2000
-        - hostPort: 8080
-          procPort: 4000
+        - host_port: 8020
+          proc_port: 3000
+        - host_port: 8000
+          proc_port: 2000
+        - host_port: 8080
+          proc_port: 4000

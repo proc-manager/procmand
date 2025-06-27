@@ -4,10 +4,9 @@ mod common;
 use process::parser;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let p = parser::parse("process.yaml")?;
+    let config = parser::parse("process.json")?;
 
-    p.pprint();
+    println!("config: {:?}", config);
 
     Ok(())
-
 }

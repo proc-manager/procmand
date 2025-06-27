@@ -1,0 +1,43 @@
+{
+    "id": "38f880df",
+    "name": "test-proc",
+    "pid": 0,
+    "context_dir": "/var/lib/procman/proc/38f880df",
+    "image": {
+        "id": "88b30c7c",
+        "name": "test-img",
+        "context_temp_dir": "/var/lib/procman/img/88b30c7c/rootfs",
+        "imgpath": "/var/lib/procman/img/88b30c7c",
+        "tag": "v0.0.1",
+        "created": "2025-01-07 00:57:32"
+    },
+    "job": {
+        "name": "run-shell",
+        "command": ["sh", "-i"]
+    },
+    "env": {
+        "HOME": "/home",
+        "LANG": "en_US.UTF-8",
+        "LANGUAGE": "en_US:en",
+        "LC_ALL": "en_US.UTF-8",
+        "PATH": "/bin:/sbin:/usr/bin:/usr/sbin",
+        "PS1": "[namepace] >",
+        "TERM": "xterm-256color"
+    },
+    "network": {
+        "ports": [
+            {
+                "host_port": 8020,
+                "proc_port": 3000
+            },
+            {
+                "host_port": 8000,
+                "proc_port": 2000
+            },
+            {
+                "host_port": 8080,
+                "proc_port": 4000
+            }
+        ]
+    }
+}
