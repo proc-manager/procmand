@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ProcessConfig {
     pub id: String,
     pub name: String,
@@ -14,7 +14,7 @@ pub struct ProcessConfig {
 }
 
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Image {
     pub id: String,
     pub name: String,
@@ -25,7 +25,7 @@ pub struct Image {
 }
 
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Job {
     pub name: String,
     pub command: Vec<String>,
@@ -33,13 +33,13 @@ pub struct Job {
 
 
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Network {
     pub ports: Vec<Port>,
 }
 
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Port {
     pub host_port: u16,
     pub proc_port: u16,
