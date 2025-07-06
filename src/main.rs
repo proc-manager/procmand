@@ -9,7 +9,7 @@ use common::models::ProcessConfig;
 use common::constants::{STACK_SIZE};
 
 use nix::sched::CloneFlags;
-use fork::{daemon, Fork};
+use fork::{fork, Fork};
 
 
 /*
@@ -37,12 +37,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let config = parser::parse("process.json")?;
 
-    if let Ok(Fork::Child) = daemon(false, false) {
-        start_process(config.clone());
+    match fork() {
+        Ok(Fork::Parent(child)) => {
+            println!("continuing execution in parent process, new child pid: {}", child);
+        }
+        Ok(Fork::Child) => {
+            start_process(config.clone());
+        }
+        Err(_) => println!("fork failed")
     }
-    
-
-    println!("config: {:?}", config);
 
     info!("done reading json config");
 
