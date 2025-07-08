@@ -29,9 +29,9 @@ use process::isoproc;
 #[allow(dead_code)]
 fn start_process(pcfg: ProcessConfig) {
     
-    let (mut p_send, mut c_recv) = ipc_unix::unnamed_pipe::pipe(true)
+    let (mut p_send, mut c_recv) = ipc_unix::unnamed_pipe::pipe(false)
         .expect("error creating p->c pipe");
-    let (mut c_send, mut p_recv) = ipc_unix::unnamed_pipe::pipe(true)
+    let (mut c_send, mut p_recv) = ipc_unix::unnamed_pipe::pipe(false)
         .expect("error creating c->p pipe");
 
     match fork() {
