@@ -1,0 +1,34 @@
+
+
+// install rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+
+// install go
+git clone https://github.com/rutu-sh/cloudlab-tools.git && \
+  cd cloudlab-tools/tools/generic && \
+  make install-go && \
+  cd   
+
+
+// setup procman 
+
+git clone https://github.com/rutu-sh/procman && \
+    cd procman && \
+    git checkout dev && \
+    cd cmd && \
+    go build -o procman && \
+    sudo cp procman /bin/procman && \
+    cp -r alpine-basic ~ && \
+    cd 
+
+
+// sample run 
+
+sudo procman v0.0.1
+
+
+// setup procmand 
+git clone https://github.com/rutu-sh/procmand && \
+    cd procmand && \
+    git checkout dev
