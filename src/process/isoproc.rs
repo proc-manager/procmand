@@ -11,20 +11,16 @@ use interprocess::unnamed_pipe::{Sender, Recver};
 
 
 pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender) {
-
-    Builder::from_default_env()
-        .filter_level(LevelFilter::Info)
-        .init();
     
-    info!("setting up the isolated process");
+    println!("setting up the isolated process");
 
     sndr.write_all(String::from("OK").as_bytes()).expect("error writing");
     let mut buf = [0; 2];
     recv.read_exact(&mut buf[..]).expect("error reading");
 
-    info!("setting up utsns");
+    println!("setting up utsns");
     setup_utsns();
-    info!("done setting up utsns");
+    println!("done setting up utsns");
 
     unistd::chdir(path::Path::new(&pcfg.context_dir)).expect("unable to chdir");
     let cf = CloneFlags::CLONE_NEWNS;
