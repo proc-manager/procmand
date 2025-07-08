@@ -13,6 +13,6 @@ pub fn setup_isoproc(pcfg: &ProcessConfig) {
     let cf = CloneFlags::CLONE_NEWNS;
     sched::unshare(cf).expect("unable to unshare");
     unistd::chroot(path::Path::new(&pcfg.context_dir)).expect("unable to chroot");
-    info!("hello from chroot process");    
+    println!("hello from chroot process");    
 
 }
