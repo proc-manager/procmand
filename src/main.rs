@@ -1,13 +1,10 @@
 mod process;
 mod common;
 
-use std::path;
 use env_logger::Builder;
 use log::{info, LevelFilter};
 
-use nix::sched::{self, CloneFlags};
 use fork::{fork, Fork};
-use nix::unistd;
 use process::parser;
 
 use common::models::ProcessConfig;
