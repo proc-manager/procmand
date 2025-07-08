@@ -1,29 +1,48 @@
 mod process;
 mod common;
 
-use log::{info, LevelFilter};
+use std::path;
 use env_logger::Builder;
+use log::{info, LevelFilter};
+
+use nix::sched::{self, CloneFlags};
+use fork::{fork, Fork};
+use nix::unistd;
 use process::parser;
 
 use common::models::ProcessConfig;
-use common::constants::{STACK_SIZE};
-
-use nix::sched::CloneFlags;
-use fork::{fork, Fork};
 
 
 /*
-
     Responsible for:
         1. reading from the unix socket for new thread requests
         2. calling isoproc for instantiating new isolated processes
 
+    Workflow:
+        The main function is an event loop that is multi-threaded. 
+        It calls start_process with the configuration. 
+        The start_process function forks and sets up the new process. 
+        
 */
-
 
 #[allow(dead_code)]
 fn start_process(pcfg: ProcessConfig) {
-    println!("{:?}", pcfg);
+    match fork() {
+        Ok(Fork::Parent(child)) => {
+            println!("continuing in parent process: {}", child);
+        },
+        Ok(Fork::Child) => {
+            println!("i'm the new child process: {:?}", pcfg); 
+            unistd::chdir(path::Path::new(&pcfg.context_dir)).expect("unable to chdir");
+            let cf = CloneFlags::CLONE_NEWNS; 
+            sched::unshare(cf).expect("unable to unshare");
+            unistd::chroot(path::Path::new(&pcfg.context_dir)).expect("unable to chroot");
+            println!("hello from unshared process");
+        },
+        Err(_) => {
+            println!("fork failed");
+        }
+    }
 }
 
 
@@ -36,16 +55,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("reading the json config");
 
     let config = parser::parse("process.json")?;
-
-    match fork() {
-        Ok(Fork::Parent(child)) => {
-            println!("continuing execution in parent process, new child pid: {}", child);
-        }
-        Ok(Fork::Child) => {
-            start_process(config.clone());
-        }
-        Err(_) => println!("fork failed")
-    }
+    start_process(config);
 
     info!("done reading json config");
 
