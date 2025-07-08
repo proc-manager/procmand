@@ -11,6 +11,7 @@ use nix::unistd;
 use process::parser;
 
 use common::models::ProcessConfig;
+use process::isoproc;
 
 
 /*
@@ -24,7 +25,6 @@ use common::models::ProcessConfig;
         The start_process function forks and sets up the new process. 
         
 */
-
 #[allow(dead_code)]
 fn start_process(pcfg: ProcessConfig) {
     match fork() {
@@ -32,12 +32,7 @@ fn start_process(pcfg: ProcessConfig) {
             println!("continuing in parent process: {}", child);
         },
         Ok(Fork::Child) => {
-            println!("i'm the new child process: {:?}", pcfg); 
-            unistd::chdir(path::Path::new(&pcfg.context_dir)).expect("unable to chdir");
-            let cf = CloneFlags::CLONE_NEWNS; 
-            sched::unshare(cf).expect("unable to unshare");
-            unistd::chroot(path::Path::new(&pcfg.context_dir)).expect("unable to chroot");
-            println!("hello from unshared process");
+            isoproc::setup_isoproc(&pcfg); 
         },
         Err(_) => {
             println!("fork failed");
