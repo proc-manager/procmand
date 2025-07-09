@@ -20,7 +20,7 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
     println!("done setting up utsns");
 
     unistd::chdir(path::Path::new(&pcfg.context_dir)).expect("unable to chdir");
-    let cf = CloneFlags::CLONE_NEWNS;
+    let cf = CloneFlags::CLONE_NEWNS | CloneFlags::CLONE_NEWUSER | CloneFlags::CLONE_NEWPID | CloneFlags::CLONE_NEWUTS;
     sched::unshare(cf).expect("cannot unshare");
     unistd::chroot(path::Path::new(&pcfg.context_dir)).expect("unable to chroot");
 
