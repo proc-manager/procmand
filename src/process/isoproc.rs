@@ -3,29 +3,31 @@ use crate::common::models::ProcessConfig;
 use std::{io::{Read, Write}, path};
 use std::fs::File;
 
+use log::info;
+
 use nix::{sched::{self, CloneFlags}, unistd};
 use interprocess::unnamed_pipe::{Sender, Recver};
 
 
 pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender) {
     
-    println!("setting up the isolated process");
+    info!("setting up the isolated process");
 
+    // unshare and wait for the parent process to setup required things
     unistd::chdir(path::Path::new(&pcfg.context_dir)).expect("unable to chdir");
     let cf = CloneFlags::CLONE_NEWNS | CloneFlags::CLONE_NEWUSER | CloneFlags::CLONE_NEWPID | CloneFlags::CLONE_NEWUTS;
     sched::unshare(cf).expect("cannot unshare");
-    // unistd::chroot(path::Path::new(&pcfg.context_dir)).expect("unable to chroot");
 
     sndr.write_all(String::from("OK").as_bytes()).expect("error writing");
 
     let mut buf = [0; 2];
     recv.read_exact(&mut buf[..]).expect("error reading");
 
-    println!("setting up utsns");
+    info!("setting up utsns");
     setup_utsns();
-    println!("done setting up utsns");
+    info!("done setting up utsns");
     
-    println!("hello from chroot process");    
+    info!("hello from isolated process");    
 
 }
 
@@ -36,7 +38,7 @@ pub fn setup_utsns() {
 
 
 pub fn setup_userns(pid: &i32) { 
-    println!("setting up userns");
+    info!("setting up userns");
     let uid = 1000;
 
     let uidmap_path = format!("/proc/{}/uid_map", pid);
@@ -58,6 +60,6 @@ pub fn setup_userns(pid: &i32) {
 
     gidmap_file.write_all(write_line.as_bytes()).expect("unable to write um");
 
-    println!("done setting up userns");
+    info!("done setting up userns");
 }
 
