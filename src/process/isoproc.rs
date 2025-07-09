@@ -34,24 +34,24 @@ pub fn setup_utsns() {
 }
 
 
-pub fn setup_userns(pcfg: &ProcessConfig, pid: &i32) { 
+pub fn setup_userns(pid: &i32) { 
     println!("setting up userns");
     let uid = 1000;
 
-    let uidmap_path = format!("{}/rootfs/proc/{}/uid_map", pcfg.context_dir, pid);
+    let uidmap_path = format!("/proc/{}/uid_map", pid);
     let write_line = format!("0 {} 1", uid);    
     let mut uidmap_file = File::create(path::Path::new(&uidmap_path)).expect("unable to open um file");
 
     uidmap_file.write_all(write_line.as_bytes()).expect("unable to write um");
 
 
-    let setgroups_path = format!("{}/rootfs/proc/{}/setgroups", pcfg.context_dir, pid);
+    let setgroups_path = format!("/proc/{}/setgroups", pid);
     let write_line = "deny";
     let mut setgroups_file = File::create(path::Path::new(&setgroups_path)).expect("unable to open sg file");
     setgroups_file.write_all(write_line.as_bytes()).expect("unable to write sg");
 
 
-    let gidmap_path = format!("{}/rootfs/proc/{}/gid_map", pcfg.context_dir, pid);
+    let gidmap_path = format!("/proc/{}/gid_map", pid);
     let write_line = format!("0 {} 1", uid);    
     let mut gidmap_file = File::create(path::Path::new(&gidmap_path)).expect("unable to open gm file");
 

@@ -39,8 +39,8 @@ fn start_process(pcfg: ProcessConfig) {
             println!("continuing in parent process: {}", child);
             let mut buf = [0; 2];
             p_recv.read_exact(&mut buf).expect("parent: error reading");
+            isoproc::setup_userns(&child);
             p_send.write_all(String::from("OK").as_bytes()).expect("parent: error writing");
-            isoproc::setup_userns(&pcfg, &child);
         },
         Ok(Fork::Child) => {
             info!("in child process");
