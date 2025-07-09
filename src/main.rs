@@ -36,7 +36,7 @@ fn start_process(pcfg: ProcessConfig) {
 
     match fork() {
         Ok(Fork::Parent(child)) => {
-            println!("continuing in parent process: {}", child);
+            info!("continuing in parent process: {}", child);
             let mut buf = [0; 2];
             p_recv.read_exact(&mut buf).expect("parent: error reading");
             isoproc::setup_userns(&child);
@@ -49,7 +49,7 @@ fn start_process(pcfg: ProcessConfig) {
             unistd::close(p_send).expect("unable to close p_send");
         },
         Err(_) => {
-            println!("fork failed");
+            info!("fork failed");
         }
     } 
 
