@@ -14,7 +14,11 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
     info!("setting up the isolated process");
 
     // unshare 
-    let cf = CloneFlags::CLONE_NEWNS | CloneFlags::CLONE_NEWUSER | CloneFlags::CLONE_NEWPID | CloneFlags::CLONE_NEWUTS;
+    let cf = CloneFlags::CLONE_NEWNS 
+        | CloneFlags::CLONE_NEWUSER 
+        | CloneFlags::CLONE_NEWPID 
+        | CloneFlags::CLONE_NEWUTS 
+        | CloneFlags::CLONE_NEWNET;
     sched::unshare(cf).expect("cannot unshare");
 
     // notify parent process to do post unshare setup
