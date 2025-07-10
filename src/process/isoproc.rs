@@ -7,6 +7,7 @@ use std::env;
 use log::info;
 
 use nix::{sched::{self, CloneFlags}, unistd, mount::{mount, MsFlags, umount2, MntFlags}};
+use nix::sys::stat::{chmod, Mode};
 use interprocess::unnamed_pipe::{Sender, Recver};
 
 
@@ -139,10 +140,16 @@ fn setup_procfs() {
 
     fs::create_dir_all("/proc")
         .expect("unable to create dir /proc");
-    
+
 
     let proc_path = Path::new("proc");
     let root_proc_path = Path::new("/proc");
+
+    if root_proc_path.exists() {
+        fs::remove_dir(root_proc_path).expect("unable to remote old /proc");
+    }
+
+    unistd::mkdir(root_proc_path, Mode::from_bits_truncate(0o555)).expect("unable to create /proc");
 
     println!("curr_dir: {:?}", env::current_dir().expect("unable to get"));
     mount::<_, Path, _, _>(
