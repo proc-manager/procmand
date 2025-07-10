@@ -7,7 +7,7 @@ use std::env;
 use log::info;
 
 use nix::{sched::{self, CloneFlags}, unistd, mount::{mount, MsFlags, umount2, MntFlags}};
-use nix::sys::stat::{chmod, Mode};
+use nix::sys::stat::Mode;
 use interprocess::unnamed_pipe::{Sender, Recver};
 
 
