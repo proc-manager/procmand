@@ -146,12 +146,14 @@ fn setup_procfs() {
     let root_proc_path = Path::new("/proc");
 
     if root_proc_path.exists() {
+        info!("exists: removing it");
         fs::remove_dir(root_proc_path).expect("unable to remote old /proc");
     }
 
+    info!("creating dir");
     unistd::mkdir(root_proc_path, Mode::from_bits_truncate(0o555)).expect("unable to create /proc");
 
-    println!("curr_dir: {:?}", env::current_dir().expect("unable to get"));
+    info!("curr_dir: {:?}", env::current_dir().expect("unable to get"));
     mount::<_, Path, _, _>(
         Some(proc_path), 
         root_proc_path, 
