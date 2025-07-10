@@ -46,9 +46,9 @@ fn start_process(pcfg: ProcessConfig) {
         },
         Ok(Fork::Child) => {
             info!("in child process");
-            isoproc::setup_isoproc(&pcfg, &mut c_recv, &mut c_send); 
             unistd::close(p_recv).expect("unable to close p_recv");
             unistd::close(p_send).expect("unable to close p_send");
+            isoproc::setup_isoproc(&pcfg, &mut c_recv, &mut c_send); 
         },
         Err(_) => {
             info!("fork failed");

@@ -78,12 +78,10 @@ pub fn setup_userns(pid: &i32) {
 pub fn setup_mntns(pcfg: &ProcessConfig) {
     
     info!("setting up mntns");
-    /*
     if unistd::geteuid() != 0.into() {
         info!("the actual uid is: {}", unistd::geteuid());
         panic!("ayo why you not root");
     }
-    */
 
     let rfs_path = format!("{}/rootfs", pcfg.context_dir).to_string();
     let proc_rootfs = Path::new(&rfs_path);
