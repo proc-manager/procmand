@@ -132,7 +132,7 @@ fn setup_procfs() {
 
     info!("creating procfs");
 
-    fs::create_dir("/proc")
+    fs::create_dir_all("/proc")
         .expect("unable to create dir /proc");
     
 
