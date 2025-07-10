@@ -120,14 +120,14 @@ pub fn setup_mntns(pcfg: &ProcessConfig) {
     unistd::chdir("/")
         .expect("unable to chdir to root");
 
-    info!("preparing procfs");
-    setup_procfs();
-
     info!("unmounting .put_old");
     umount2(".put_old", MntFlags::MNT_DETACH).expect("unable to umount");
 
     info!("removing .put_old");
     fs::remove_dir(Path::new(".put_old")).expect("unable to remove .put_old");
+
+    info!("preparing procfs");
+    setup_procfs();
 
     info!("done setting up mount namespace")
 
