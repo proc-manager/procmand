@@ -2,6 +2,7 @@ use crate::common::models::ProcessConfig;
 
 use std::{io::{Read, Write}, path::{self, Path}};
 use std::fs::{self, File};
+use std::env;
 
 use log::info;
 
@@ -142,6 +143,8 @@ fn setup_procfs() {
 
     let proc_path = Path::new("proc");
     let root_proc_path = Path::new("/proc");
+
+    println!("curr_dir: {:?}", env::current_dir().expect("unable to get"));
     mount::<_, Path, _, _>(
         Some(proc_path), 
         root_proc_path, 
