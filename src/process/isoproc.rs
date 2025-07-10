@@ -73,6 +73,7 @@ pub fn setup_mntns(pcfg: &ProcessConfig) {
     
     info!("setting up mntns");
     if unistd::geteuid() != 0.into() {
+        info!("the actual uid is: {}", unistd::geteuid());
         panic!("ayo why you not root");
     }
 
