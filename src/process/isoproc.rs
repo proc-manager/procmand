@@ -25,11 +25,11 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
     let mut buf = [0; 2];
     recv.read_exact(&mut buf[..]).expect("error reading");
 
+    setup_mntns(pcfg);
+
     info!("setting up utsns");
     setup_utsns();
     info!("done setting up utsns");
-
-    setup_mntns(pcfg);
 
     sndr.write_all(String::from("OK").as_bytes()).expect("error writing");
     
@@ -72,11 +72,12 @@ pub fn setup_userns(pid: &i32) {
 pub fn setup_mntns(pcfg: &ProcessConfig) {
     
     info!("setting up mntns");
+    /*
     if unistd::geteuid() != 0.into() {
         info!("the actual uid is: {}", unistd::geteuid());
         panic!("ayo why you not root");
     }
-
+    */
 
     let rfs_path = format!("{}/rootfs", pcfg.context_dir).to_string();
     let proc_rootfs = Path::new(&rfs_path);
@@ -98,7 +99,7 @@ pub fn setup_mntns(pcfg: &ProcessConfig) {
         Some(""),
     ).expect("error ms_bind");
 
-    unistd::chdir(path::Path::new(&pcfg.context_dir))
+    unistd::chdir(proc_rootfs)
         .expect("unable to chdir");
 
     let put_old = format!("{}/.put_old", rfs_path);
