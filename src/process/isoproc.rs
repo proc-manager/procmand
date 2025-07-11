@@ -50,11 +50,9 @@ pub fn setup_userns(pid: &i32) {
     info!("setting up userns");
     let uid = 1000;
 
-
     let uidmap_path = format!("/proc/{}/uid_map", pid);
-    let write_line = format!("0 {} 1", uid);    
+    let write_line = format!("0 {} 1\n", uid);    
     let mut uidmap_file = File::create(path::Path::new(&uidmap_path)).expect("unable to open um file");
-
     uidmap_file.write_all(write_line.as_bytes()).expect("unable to write um");
 
 
@@ -65,9 +63,8 @@ pub fn setup_userns(pid: &i32) {
 
 
     let gidmap_path = format!("/proc/{}/gid_map", pid);
-    let write_line = format!("0 {} 1", uid);    
+    let write_line = format!("0 {} 1\n", uid);    
     let mut gidmap_file = File::create(path::Path::new(&gidmap_path)).expect("unable to open gm file");
-
     gidmap_file.write_all(write_line.as_bytes()).expect("unable to write um");
 
     info!("done setting up userns");
@@ -90,6 +87,10 @@ fn setup_procfs() {
     let mut proc_perm = fs::metadata(proc_path).expect("unable to get permissions").permissions();
     proc_perm.set_mode(0o555);
     fs::set_permissions(proc_path, proc_perm).expect("unable to set proc permissions");
+
+    println!("euid: {}", unistd::geteuid());
+    println!("guid: {}", unistd::getgid());
+    println!("uid: {}", unistd::getuid());
 
     info!("mounting as proc");
     mount::<_, _, _, _>(
