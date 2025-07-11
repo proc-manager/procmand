@@ -1,13 +1,11 @@
 use crate::common::models::ProcessConfig;
 
-use std::{io::{Read, Write}, path::{self, Path}};
+use std::{io::{Read, Write}, os::unix::fs::PermissionsExt, path::{self, Path}};
 use std::fs::{self, File};
-use std::env;
 
 use log::info;
 
 use nix::{sched::{self, CloneFlags}, unistd, mount::{mount, MsFlags, umount2, MntFlags}};
-use nix::sys::stat::Mode;
 use interprocess::unnamed_pipe::{Sender, Recver};
 
 
@@ -26,7 +24,6 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
     // notify parent process to do post unshare setup
     sndr.write_all(String::from("OK").as_bytes()).expect("error writing");
 
-
     // wait for parent process to perform the setup
     let mut buf = [0; 2];
     recv.read_exact(&mut buf[..]).expect("error reading");
@@ -41,6 +38,8 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
     
     info!("hello from isolated process");    
 
+    sndr.write_all(String::from("OK").as_bytes()).expect("error writing");
+
 }
 
 
@@ -52,6 +51,7 @@ pub fn setup_utsns() {
 pub fn setup_userns(pid: &i32) { 
     info!("setting up userns");
     let uid = 1000;
+
 
     let uidmap_path = format!("/proc/{}/uid_map", pid);
     let write_line = format!("0 {} 1", uid);    
@@ -75,92 +75,91 @@ pub fn setup_userns(pid: &i32) {
     info!("done setting up userns");
 }
 
-pub fn setup_mntns(pcfg: &ProcessConfig) {
-    
-    info!("setting up mntns");
-    if unistd::geteuid() != 0.into() {
-        info!("the actual uid is: {}", unistd::geteuid());
-        panic!("ayo why you not root");
-    }
-
-    let rfs_path = format!("{}/rootfs", pcfg.context_dir).to_string();
-    let proc_rootfs = Path::new(&rfs_path);
-    let fstype = Some("ext4");
-    let mflags = MsFlags::MS_REC | MsFlags::MS_PRIVATE;
-
-    // Remount / as private
-    info!("remounting as private");
-    mount::<_, _, _, _>(None::<&Path>, Path::new("/"), None::<&str>, mflags, None::<&str>)
-        .expect("unable to mount");
-
-    // Bind mount rootfs onto itself
-    info!("binding mount rootfs onto itself");
-    mount::<_, _, _, _>(
-        Some(proc_rootfs),
-        proc_rootfs,
-        fstype,
-        MsFlags::MS_BIND,
-        Some(""),
-    ).expect("error ms_bind");
-
-    unistd::chdir(proc_rootfs)
-        .expect("unable to chdir");
-
-    let put_old = format!("{}/.put_old", rfs_path);
-    fs::create_dir_all(&put_old)
-        .expect("unable to create .put_old");
-
-    info!("pivoting root");
-    unistd::pivot_root(Path::new(&rfs_path), Path::new(&put_old))
-        .expect("unable to pivot root");
-
-    info!("chdir to root");
-    unistd::chdir("/")
-        .expect("unable to chdir to root");
-
-    info!("unmounting .put_old");
-    umount2(".put_old", MntFlags::MNT_DETACH).expect("unable to umount");
-
-    info!("removing .put_old");
-    fs::remove_dir(Path::new(".put_old")).expect("unable to remove .put_old");
-
-    info!("preparing procfs");
-    setup_procfs();
-
-    info!("done setting up mount namespace")
-
-}
-
 
 fn setup_procfs() {
+    let proc_path = Path::new("/proc");
 
-    info!("creating procfs");
-
-    fs::create_dir_all("/proc")
-        .expect("unable to create dir /proc");
-
-
-    let proc_path = Path::new("proc");
-    let root_proc_path = Path::new("/proc");
-
-    if root_proc_path.exists() {
-        info!("exists: removing it");
-        fs::remove_dir(root_proc_path).expect("unable to remote old /proc");
+    if proc_path.exists() {
+        info!("removing old /proc");
+        fs::remove_dir(proc_path).expect("unable to remove proc");
+    } else {
+        info!("creating new /proc");
+        fs::create_dir(proc_path).expect("unable to create new proc");
+        let mut put_old_perm = fs::metadata(proc_path).expect("unable to get permissions").permissions();
+        put_old_perm.set_mode(0o555);
+        fs::set_permissions(proc_path, put_old_perm).expect("unable to set permissions");
     }
 
-    info!("creating dir");
-    unistd::mkdir(root_proc_path, Mode::from_bits_truncate(0o555)).expect("unable to create /proc");
 
-    info!("curr_dir: {:?}", env::current_dir().expect("unable to get"));
-    mount::<_, Path, _, _>(
-        Some(proc_path), 
-        root_proc_path, 
-        Some(proc_path), 
+    mount::<_, _, _, _>(
+        Some("proc"),
+        proc_path,
+        Some("proc"), 
         MsFlags::empty(),
-        None::<&Path>
-    ).expect("unable to mount");
+        None::<&str>
+    ).expect("unable to mount proc");
 
-    
-    info!("created procfs");
+
 }
+
+
+pub fn setup_mntns(pcfg: &ProcessConfig) {
+    
+    let new_root = format!("{}/rootfs", pcfg.context_dir);    
+    let put_old  = format!("{}/.put_old", new_root);
+
+    let new_root_path = Path::new(&new_root);
+    let put_old_path  = Path::new(&put_old);
+
+    // ensure no shared propagation
+    info!("ensuring no shared propagation");
+    let msflags = MsFlags::MS_REC | MsFlags::MS_PRIVATE;
+    mount::<_, _, _, _>(None::<&Path>, Path::new("/"), None::<&str>, msflags, None::<&str>)
+        .expect("error ensuring no shared propagation");
+
+
+    // ensure new root is a mount point
+    info!("ensuring new root is a mount point");
+    let fstype = Some("ext4");
+    mount::<_, _, _, _>(
+        Some(new_root_path),
+        new_root_path,
+        fstype,
+        MsFlags::MS_BIND,
+        None::<&str>,
+    ).expect("error ms_bind");
+
+    // because I create put_old on the same path multiple times while testing
+    if put_old_path.exists() {
+        info!("put_old exists - removing it");
+        fs::remove_dir(put_old_path).expect("unable to remove previous .put_old");
+    }
+
+    info!("creating new put_old");
+    fs::create_dir(put_old_path).expect("unable to create new put_old");
+    let mut put_old_perm = fs::metadata(&put_old).expect("unable to get permissions").permissions();
+    put_old_perm.set_mode(0o777);
+    fs::set_permissions(put_old_path, put_old_perm).expect("unable to set permissions");
+
+
+    // pivot root
+    info!("pivoting root");
+    unistd::pivot_root(new_root_path, put_old_path).expect("unable to pivot root");
+
+    info!("changing dir to root");
+    unistd::chdir("/").expect("unable to chdir to new root");
+
+    setup_procfs();
+
+    info!("unmounting put_old");
+    let isoproc_put_old = "/.put_old";
+    let isoproc_put_old_path = Path::new(isoproc_put_old);
+    umount2(isoproc_put_old_path, MntFlags::MNT_DETACH).expect("unable to umount2 put_old");
+
+    info!("removing put_old");
+    fs::remove_dir(isoproc_put_old_path).expect("unable to rmdir put_old");
+
+}
+
+
 

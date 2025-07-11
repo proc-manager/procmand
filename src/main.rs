@@ -43,6 +43,8 @@ fn start_process(pcfg: ProcessConfig) {
             p_send.write_all(String::from("OK").as_bytes()).expect("parent: error writing");
             let mut buf = [0; 2];
             p_recv.read_exact(&mut buf).expect("parent: error reading");
+            info!("child process setup done: waiting to exit");
+            p_recv.read_exact(&mut buf).expect("parent: error reading");
         },
         Ok(Fork::Child) => {
             info!("in child process");
