@@ -14,8 +14,7 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
     info!("setting up the isolated process");
 
     // unshare 
-    let cf = CloneFlags::CLONE_NEWNS | CloneFlags::CLONE_NEWUSER | CloneFlags::CLONE_NEWPID | CloneFlags::CLONE_NEWUTS | CloneFlags::CLONE_NEWNET;
-    sched::unshare(cf).expect("cannot unshare");
+    sched::unshare(CloneFlags::CLONE_NEWUSER).expect("cannot unshare");
 
     // notify parent process to do post unshare setup
     sndr.write_all(String::from("OK").as_bytes()).expect("error writing");
@@ -23,6 +22,9 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
     // wait for parent process to perform the setup
     let mut buf = [0; 2];
     recv.read_exact(&mut buf[..]).expect("error reading");
+
+    let cf = CloneFlags::CLONE_NEWNS | CloneFlags::CLONE_NEWPID | CloneFlags::CLONE_NEWUTS | CloneFlags::CLONE_NEWNET;
+    sched::unshare(cf).expect("cannot unshare");
 
     setup_mntns(pcfg);
 
