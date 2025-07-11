@@ -218,7 +218,7 @@ pub fn setup_mntns(pcfg: &ProcessConfig) {
     info!("changing dir to root");
     unistd::chdir("/").expect("unable to chdir to new root");
 
-    // setup_procfs();
+    setup_procfs();
 
     info!("unmounting put_old");
     let isoproc_put_old = "/.put_old";
