@@ -50,6 +50,7 @@ pub fn setup_utsns() {
 
 // must call from the parent processs 
 // only after the userns is done setting up, the remaining ns should be modified
+/*
 pub fn setup_userns(pid: &i32) { 
     info!("setting up userns");
     let uid = 1000;
@@ -73,6 +74,39 @@ pub fn setup_userns(pid: &i32) {
 
     info!("done setting up userns");
 }
+*/
+
+pub fn setup_userns(pid: &i32) {
+    info!("setting up userns");
+
+    let uid = 1000;
+
+    // Write UID map
+    let uidmap_path = format!("/proc/{}/uid_map", pid);
+    let uidmap_content = format!("0 {} 1\n", uid);
+    let mut uidmap_file = File::create(Path::new(&uidmap_path))
+        .expect("unable to open uid_map");
+    uidmap_file.write_all(uidmap_content.as_bytes())
+        .expect("unable to write to uid_map");
+
+    // Must deny setgroups *before* writing gid_map
+    let setgroups_path = format!("/proc/{}/setgroups", pid);
+    let mut setgroups_file = File::create(Path::new(&setgroups_path))
+        .expect("unable to open setgroups");
+    setgroups_file.write_all(b"deny")
+        .expect("unable to write to setgroups");
+
+    // Write GID map
+    let gidmap_path = format!("/proc/{}/gid_map", pid);
+    let gidmap_content = format!("0 {} 1\n", uid);
+    let mut gidmap_file = File::create(Path::new(&gidmap_path))
+        .expect("unable to open gid_map");
+    gidmap_file.write_all(gidmap_content.as_bytes())
+        .expect("unable to write to gid_map");
+
+    info!("done setting up userns");
+}
+
 
 #[allow(dead_code)]
 fn setup_procfs() {
@@ -110,6 +144,11 @@ fn setup_procfs() {
 
 pub fn setup_mntns(pcfg: &ProcessConfig) {
     
+
+    println!("euid: {}", unistd::geteuid());
+    println!("guid: {}", unistd::getgid());
+    println!("uid: {}", unistd::getuid());
+
     let new_root = format!("{}/rootfs", pcfg.context_dir);    
     let put_old  = format!("{}/.put_old", new_root);
 
