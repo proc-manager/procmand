@@ -128,27 +128,12 @@ pub fn setup_mntns(pcfg: &ProcessConfig) {
     put_old_perm.set_mode(0o777);
     fs::set_permissions(put_old_path, put_old_perm).expect("unable to set permissions");
 
-    let proc_dir = format!("{}/proc", new_root);
-    let proc_path = Path::new(&proc_dir);
-    if proc_path.exists() {
-        info!("removing old /proc");
-        fs::remove_dir(proc_path).expect("unable to remove proc");
-    } 
-    
-    info!("creating new /proc");
-    fs::create_dir(proc_path).expect("unable to create new proc");
-    let mut put_old_perm = fs::metadata(proc_path).expect("unable to get permissions").permissions();
-    put_old_perm.set_mode(0o555);
-    fs::set_permissions(proc_path, put_old_perm).expect("unable to set permissions");
-
-
     // pivot root
     info!("pivoting root");
     unistd::pivot_root(new_root_path, put_old_path).expect("unable to pivot root");
 
     info!("changing dir to root");
     unistd::chdir("/").expect("unable to chdir to new root");
-
 
     setup_procfs();
 
