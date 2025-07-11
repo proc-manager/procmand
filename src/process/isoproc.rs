@@ -24,11 +24,6 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
     let mut buf = [0; 2];
     recv.read_exact(&mut buf[..]).expect("error reading");
 
-    let root_uid = Uid::from_raw(0);
-    let root_gid = Gid::from_raw(0);
-    unistd::setgid(root_gid).expect("unable to set gid");
-    unistd::setuid(root_uid).expect("unable to set uid");
-
     setup_mntns(pcfg);
 
     info!("setting up utsns");
@@ -155,6 +150,11 @@ pub fn setup_mntns(pcfg: &ProcessConfig) {
     unistd::chdir("/").expect("unable to chdir to new root");
 
     setup_procfs();
+
+    let root_uid = Uid::from_raw(0);
+    let root_gid = Gid::from_raw(0);
+    unistd::setgid(root_gid).expect("unable to set gid");
+    unistd::setuid(root_uid).expect("unable to set uid");
 
     info!("unmounting put_old");
     let isoproc_put_old = "/.put_old";
