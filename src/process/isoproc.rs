@@ -177,6 +177,10 @@ pub fn setup_mntns(pcfg: &ProcessConfig) {
     unistd::setuid(0.into()).expect("unable to set uid");
     unistd::setgid(0.into()).expect("unable to set gid");
 
+    println!("euid: {}", unistd::geteuid());
+    println!("guid: {}", unistd::getgid());
+    println!("uid: {}", unistd::getuid());
+
     // ensure no shared propagation
     info!("ensuring no shared propagation");
     let msflags = MsFlags::MS_REC | MsFlags::MS_PRIVATE;
