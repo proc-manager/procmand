@@ -1,11 +1,11 @@
 use crate::common::models::ProcessConfig;
 
-use std::{io::{Read, Write}, os::unix::fs::PermissionsExt, path::{self, Path}};
+use std::{io::{Read, Write}, os::unix::fs::PermissionsExt, path::Path};
 use std::fs::{self, File, read_to_string};
 
 use log::info;
 
-use nix::{mount::{mount, umount2, MntFlags, MsFlags}, sched::{self, CloneFlags}, unistd::{self, Gid, Uid}};
+use nix::{mount::{mount, umount2, MntFlags, MsFlags}, sched::{self, CloneFlags}, unistd};
 use interprocess::unnamed_pipe::{Sender, Recver};
 
 
@@ -125,6 +125,13 @@ pub fn setup_userns(pid: &i32) {
 fn setup_procfs() {
 
     info!("setting up procfs");
+
+    let status = std::fs::read_to_string("/proc/self/status").unwrap();
+    for line in status.lines() {
+        if line.starts_with("CapEff") || line.starts_with("CapBnd") {
+            println!("{}", line);
+        }
+    }
 
     let proc_path = Path::new("/proc");
     
