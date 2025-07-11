@@ -14,7 +14,12 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
     info!("setting up the isolated process");
 
     // unshare 
-    sched::unshare(CloneFlags::CLONE_NEWUSER).expect("cannot unshare");
+    let cf = CloneFlags::CLONE_NEWUSER 
+        | CloneFlags::CLONE_NEWNS 
+        | CloneFlags::CLONE_NEWPID 
+        | CloneFlags::CLONE_NEWUTS 
+        | CloneFlags::CLONE_NEWNET;
+    sched::unshare(cf).expect("cannot unshare");
 
     // notify parent process to do post unshare setup
     sndr.write_all(String::from("OK").as_bytes()).expect("error writing");
@@ -22,9 +27,6 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
     // wait for parent process to perform the setup
     let mut buf = [0; 2];
     recv.read_exact(&mut buf[..]).expect("error reading");
-
-    let cf = CloneFlags::CLONE_NEWNS | CloneFlags::CLONE_NEWPID | CloneFlags::CLONE_NEWUTS | CloneFlags::CLONE_NEWNET;
-    sched::unshare(cf).expect("cannot unshare");
 
     setup_mntns(pcfg);
 
@@ -72,7 +74,7 @@ pub fn setup_userns(pid: &i32) {
     info!("done setting up userns");
 }
 
-
+#[allow(dead_code)]
 fn setup_procfs() {
 
     info!("setting up procfs");
@@ -89,11 +91,6 @@ fn setup_procfs() {
     let mut proc_perm = fs::metadata(proc_path).expect("unable to get permissions").permissions();
     proc_perm.set_mode(0o555);
     fs::set_permissions(proc_path, proc_perm).expect("unable to set proc permissions");
-
-    let root_uid = Uid::from_raw(0);
-    let root_gid = Gid::from_raw(0);
-    unistd::setgid(root_gid).expect("unable to set gid");
-    unistd::setuid(root_uid).expect("unable to set uid");
 
     println!("euid: {}", unistd::geteuid());
     println!("guid: {}", unistd::getgid());
@@ -156,8 +153,7 @@ pub fn setup_mntns(pcfg: &ProcessConfig) {
     info!("changing dir to root");
     unistd::chdir("/").expect("unable to chdir to new root");
 
-    setup_procfs();
-
+    // setup_procfs();
 
     info!("unmounting put_old");
     let isoproc_put_old = "/.put_old";
