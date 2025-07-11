@@ -14,19 +14,22 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
     info!("setting up the isolated process");
 
     // unshare 
-    let cf = CloneFlags::CLONE_NEWUSER 
-        | CloneFlags::CLONE_NEWNS 
-        | CloneFlags::CLONE_NEWPID 
-        | CloneFlags::CLONE_NEWUTS 
-        | CloneFlags::CLONE_NEWNET;
-    sched::unshare(cf).expect("cannot unshare");
+    sched::unshare(CloneFlags::CLONE_NEWUSER).expect("unable to clone newuser");
 
     // notify parent process to do post unshare setup
-    sndr.write_all(String::from("OK").as_bytes()).expect("error writing");
+    sndr.write_all(b"OK").expect("error writing");
 
     // wait for parent process to perform the setup
     let mut buf = [0; 2];
     recv.read_exact(&mut buf[..]).expect("error reading");
+    info!("child - received: {:?}", std::str::from_utf8(&buf).unwrap());
+
+    let cf = CloneFlags::CLONE_NEWNS 
+        | CloneFlags::CLONE_NEWPID 
+        | CloneFlags::CLONE_NEWUTS 
+        | CloneFlags::CLONE_NEWNET;
+
+    sched::unshare(cf).expect("cannot unshare");
 
     setup_mntns(pcfg);
 
@@ -34,11 +37,11 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
     setup_utsns();
     info!("done setting up utsns");
 
-    sndr.write_all(String::from("OK").as_bytes()).expect("error writing");
+    sndr.write_all(b"OK").expect("error writing");
     
     info!("hello from isolated process");    
 
-    sndr.write_all(String::from("OK").as_bytes()).expect("error writing");
+    sndr.write_all(b"OK").expect("error writing");
 
 }
 

@@ -37,14 +37,27 @@ fn start_process(pcfg: ProcessConfig) {
     match fork() {
         Ok(Fork::Parent(child)) => {
             info!("continuing in parent process: {}", child);
+
+            unistd::close(c_recv).expect("unable to clone c_recv");
+            unistd::close(c_send).expect("unable to clone c_send");
+            
             let mut buf = [0; 2];
             p_recv.read_exact(&mut buf).expect("parent: error reading");
+            info!("parent - received: {:?}", std::str::from_utf8(&buf).unwrap());
+            
             isoproc::setup_userns(&child);
-            p_send.write_all(String::from("OK").as_bytes()).expect("parent: error writing");
+            
+            p_send.write_all(b"OK").expect("parent: error writing");
+            
             let mut buf = [0; 2];
             p_recv.read_exact(&mut buf).expect("parent: error reading");
+            info!("parent - received: {:?}", std::str::from_utf8(&buf).unwrap());
+            
             info!("child process setup done: waiting to exit");
+
+            let mut buf = [0; 2];
             p_recv.read_exact(&mut buf).expect("parent: error reading");
+            info!("parent - received: {:?}", std::str::from_utf8(&buf).unwrap());
         },
         Ok(Fork::Child) => {
             info!("in child process");
