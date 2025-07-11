@@ -88,6 +88,11 @@ fn setup_procfs() {
     proc_perm.set_mode(0o555);
     fs::set_permissions(proc_path, proc_perm).expect("unable to set proc permissions");
 
+    let root_uid = Uid::from_raw(0);
+    let root_gid = Gid::from_raw(0);
+    unistd::setgid(root_gid).expect("unable to set gid");
+    unistd::setuid(root_uid).expect("unable to set uid");
+
     println!("euid: {}", unistd::geteuid());
     println!("guid: {}", unistd::getgid());
     println!("uid: {}", unistd::getuid());
@@ -151,10 +156,6 @@ pub fn setup_mntns(pcfg: &ProcessConfig) {
 
     setup_procfs();
 
-    let root_uid = Uid::from_raw(0);
-    let root_gid = Gid::from_raw(0);
-    unistd::setgid(root_gid).expect("unable to set gid");
-    unistd::setuid(root_uid).expect("unable to set uid");
 
     info!("unmounting put_old");
     let isoproc_put_old = "/.put_old";
