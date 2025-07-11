@@ -145,6 +145,7 @@ fn setup_procfs() {
     println!("uid: {}", unistd::getuid());
 
     info!("mounting as proc");
+        
     mount::<_, _, _, _>(
         Some("proc"),
         proc_path,
@@ -162,6 +163,9 @@ pub fn setup_mntns(pcfg: &ProcessConfig) {
     println!("euid: {}", unistd::geteuid());
     println!("guid: {}", unistd::getgid());
     println!("uid: {}", unistd::getuid());
+
+    unistd::setuid(0.into()).expect("unable to set uid");
+    unistd::setgid(0.into()).expect("unable to set gid");
 
     let new_root = format!("{}/rootfs", pcfg.context_dir);    
     let put_old  = format!("{}/.put_old", new_root);
