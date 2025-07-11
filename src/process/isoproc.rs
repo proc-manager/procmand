@@ -136,7 +136,7 @@ fn setup_procfs() {
     
     info!("updating proc permissions");
     let mut proc_perm = fs::metadata(proc_path).expect("unable to get permissions").permissions();
-    proc_perm.set_mode(0o755);
+    proc_perm.set_mode(0o777);
     fs::set_permissions(proc_path, proc_perm).expect("unable to set proc permissions");
 
     println!("euid: {}", unistd::geteuid());
