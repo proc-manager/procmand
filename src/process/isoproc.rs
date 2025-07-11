@@ -5,7 +5,7 @@ use std::fs::{self, File};
 
 use log::info;
 
-use nix::{sched::{self, CloneFlags}, unistd, mount::{mount, MsFlags, umount2, MntFlags}};
+use nix::{libc::{setgid, setuid}, mount::{mount, umount2, MntFlags, MsFlags}, sched::{self, CloneFlags}, unistd::{self, Gid, Uid}};
 use interprocess::unnamed_pipe::{Sender, Recver};
 
 
@@ -23,6 +23,11 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
     // wait for parent process to perform the setup
     let mut buf = [0; 2];
     recv.read_exact(&mut buf[..]).expect("error reading");
+
+    let root_uid = Uid::from_raw(0);
+    let root_gid = Gid::from_raw(0);
+    unistd::setgid(root_gid).expect("unable to set gid");
+    unistd::setuid(root_uid).expect("unable to set uid");
 
     setup_mntns(pcfg);
 
