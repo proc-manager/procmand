@@ -14,11 +14,7 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
     info!("setting up the isolated process");
 
     // unshare 
-    let cf = CloneFlags::CLONE_NEWNS 
-        | CloneFlags::CLONE_NEWUSER 
-        | CloneFlags::CLONE_NEWPID 
-        | CloneFlags::CLONE_NEWUTS 
-        | CloneFlags::CLONE_NEWNET;
+    let cf = CloneFlags::CLONE_NEWNS | CloneFlags::CLONE_NEWUSER | CloneFlags::CLONE_NEWPID | CloneFlags::CLONE_NEWUTS | CloneFlags::CLONE_NEWNET;
     sched::unshare(cf).expect("cannot unshare");
 
     // notify parent process to do post unshare setup
@@ -48,6 +44,8 @@ pub fn setup_utsns() {
 }
 
 
+// must call from the parent processs 
+// only after the userns is done setting up, the remaining ns should be modified
 pub fn setup_userns(pid: &i32) { 
     info!("setting up userns");
     let uid = 1000;
@@ -73,6 +71,35 @@ pub fn setup_userns(pid: &i32) {
     gidmap_file.write_all(write_line.as_bytes()).expect("unable to write um");
 
     info!("done setting up userns");
+}
+
+
+fn setup_procfs() {
+
+    info!("setting up procfs");
+
+    let proc_path = Path::new("/proc");
+    
+    info!("removing old proc dir");
+    if proc_path.exists() {
+        fs::remove_dir(proc_path).expect("unable to remove /proc");
+    }
+    fs::create_dir(proc_path).expect("unable to create proc");
+    
+    info!("updating proc permissions");
+    let mut proc_perm = fs::metadata(proc_path).expect("unable to get permissions").permissions();
+    proc_perm.set_mode(0o555);
+    fs::set_permissions(proc_path, proc_perm).expect("unable to set proc permissions");
+
+    info!("mounting as proc");
+    mount::<_, _, _, _>(
+        Some("proc"),
+        proc_path,
+        Some("proc"), 
+        MsFlags::empty(),
+        None::<&str>
+    ).expect("unable to mount proc");
+
 }
 
 
@@ -121,17 +148,7 @@ pub fn setup_mntns(pcfg: &ProcessConfig) {
     info!("changing dir to root");
     unistd::chdir("/").expect("unable to chdir to new root");
 
-    let proc_path = Path::new("/proc");
-    let mut proc_perm = fs::metadata(proc_path).expect("unable to get permissions").permissions();
-    proc_perm.set_mode(0o555);
-    fs::set_permissions(proc_path, proc_perm).expect("unable to set proc permissions");
-    mount::<_, _, _, _>(
-        Some("proc"),
-        proc_path,
-        Some("proc"), 
-        MsFlags::empty(),
-        None::<&str>
-    ).expect("unable to mount proc");
+    setup_procfs();
 
     info!("unmounting put_old");
     let isoproc_put_old = "/.put_old";
