@@ -122,7 +122,6 @@ pub fn setup_userns(pid: &i32) {
 }
 
 
-#[allow(dead_code)]
 fn setup_procfs() {
 
     info!("setting up procfs");
@@ -137,7 +136,7 @@ fn setup_procfs() {
     
     info!("updating proc permissions");
     let mut proc_perm = fs::metadata(proc_path).expect("unable to get permissions").permissions();
-    proc_perm.set_mode(0o555);
+    proc_perm.set_mode(0o755);
     fs::set_permissions(proc_path, proc_perm).expect("unable to set proc permissions");
 
     println!("euid: {}", unistd::geteuid());
