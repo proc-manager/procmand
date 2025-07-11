@@ -114,6 +114,7 @@ fn setup_procfs() {
     println!("euid: {}", unistd::geteuid());
     println!("guid: {}", unistd::getgid());
     println!("uid: {}", unistd::getuid());
+    println!("procpath: {:?}", proc_path);
 
     info!("mounting as proc");
         
@@ -155,8 +156,12 @@ pub fn setup_mntns(pcfg: &ProcessConfig) {
     // ensure no shared propagation
     info!("ensuring no shared propagation");
     let msflags = MsFlags::MS_REC | MsFlags::MS_PRIVATE;
-    mount::<_, _, _, _>(None::<&Path>, Path::new("/"), None::<&str>, msflags, None::<&str>)
-        .expect("error ensuring no shared propagation");
+    mount::<_, _, _, _>(
+        None::<&Path>, 
+        Path::new("/"),
+        None::<&str>, 
+        msflags, None::<&str>
+    ).expect("error ensuring no shared propagation");
 
 
     // ensure new root is a mount point
