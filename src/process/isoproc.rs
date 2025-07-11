@@ -51,34 +51,6 @@ pub fn setup_utsns() {
 }
 
 
-// must call from the parent processs 
-// only after the userns is done setting up, the remaining ns should be modified
-/*
-pub fn setup_userns(pid: &i32) { 
-    info!("setting up userns");
-    let uid = 1000;
-
-    let uidmap_path = format!("/proc/{}/uid_map", pid);
-    let write_line = format!("0 {} 1\n", uid);    
-    let mut uidmap_file = File::create(path::Path::new(&uidmap_path)).expect("unable to open um file");
-    uidmap_file.write_all(write_line.as_bytes()).expect("unable to write um");
-
-
-    let setgroups_path = format!("/proc/{}/setgroups", pid);
-    let write_line = "deny";
-    let mut setgroups_file = File::create(path::Path::new(&setgroups_path)).expect("unable to open sg file");
-    setgroups_file.write_all(write_line.as_bytes()).expect("unable to write sg");
-
-
-    let gidmap_path = format!("/proc/{}/gid_map", pid);
-    let write_line = format!("0 {} 1\n", uid);    
-    let mut gidmap_file = File::create(path::Path::new(&gidmap_path)).expect("unable to open gm file");
-    gidmap_file.write_all(write_line.as_bytes()).expect("unable to write um");
-
-    info!("done setting up userns");
-}
-*/
-
 pub fn setup_userns(pid: &i32) {
     info!("setting up userns");
 
@@ -125,13 +97,6 @@ pub fn setup_userns(pid: &i32) {
 fn setup_procfs() {
 
     info!("setting up procfs");
-
-    let status = std::fs::read_to_string("/proc/self/status").unwrap();
-    for line in status.lines() {
-        if line.starts_with("CapEff") || line.starts_with("CapBnd") {
-            println!("{}", line);
-        }
-    }
 
     let proc_path = Path::new("/proc");
     
