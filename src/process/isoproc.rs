@@ -76,20 +76,6 @@ pub fn setup_userns(pid: &i32) {
 }
 
 
-fn setup_procfs() {
-
-    let proc_path = Path::new("/proc");
-    mount::<_, _, _, _>(
-        Some("proc"),
-        proc_path,
-        Some("proc"), 
-        MsFlags::empty(),
-        None::<&str>
-    ).expect("unable to mount proc");
-
-}
-
-
 pub fn setup_mntns(pcfg: &ProcessConfig) {
     
     let new_root = format!("{}/rootfs", pcfg.context_dir);    
@@ -124,7 +110,7 @@ pub fn setup_mntns(pcfg: &ProcessConfig) {
 
     info!("creating new put_old");
     fs::create_dir(put_old_path).expect("unable to create new put_old");
-    let mut put_old_perm = fs::metadata(&put_old).expect("unable to get permissions").permissions();
+    let mut put_old_perm = fs::metadata(put_old_path).expect("unable to get permissions").permissions();
     put_old_perm.set_mode(0o777);
     fs::set_permissions(put_old_path, put_old_perm).expect("unable to set permissions");
 
@@ -135,7 +121,17 @@ pub fn setup_mntns(pcfg: &ProcessConfig) {
     info!("changing dir to root");
     unistd::chdir("/").expect("unable to chdir to new root");
 
-    setup_procfs();
+    let proc_path = Path::new("/proc");
+    let mut proc_perm = fs::metadata(proc_path).expect("unable to get permissions").permissions();
+    proc_perm.set_mode(0o555);
+    fs::set_permissions(proc_path, proc_perm).expect("unable to set proc permissions");
+    mount::<_, _, _, _>(
+        Some("proc"),
+        proc_path,
+        Some("proc"), 
+        MsFlags::empty(),
+        None::<&str>
+    ).expect("unable to mount proc");
 
     info!("unmounting put_old");
     let isoproc_put_old = "/.put_old";
