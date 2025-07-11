@@ -82,13 +82,13 @@ fn setup_procfs() {
     if proc_path.exists() {
         info!("removing old /proc");
         fs::remove_dir(proc_path).expect("unable to remove proc");
-    } else {
-        info!("creating new /proc");
-        fs::create_dir(proc_path).expect("unable to create new proc");
-        let mut put_old_perm = fs::metadata(proc_path).expect("unable to get permissions").permissions();
-        put_old_perm.set_mode(0o555);
-        fs::set_permissions(proc_path, put_old_perm).expect("unable to set permissions");
-    }
+    } 
+    
+    info!("creating new /proc");
+    fs::create_dir(proc_path).expect("unable to create new proc");
+    let mut put_old_perm = fs::metadata(proc_path).expect("unable to get permissions").permissions();
+    put_old_perm.set_mode(0o555);
+    fs::set_permissions(proc_path, put_old_perm).expect("unable to set permissions");
 
 
     mount::<_, _, _, _>(
