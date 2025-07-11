@@ -1,7 +1,7 @@
 use crate::common::models::ProcessConfig;
 
 use std::{io::{Read, Write}, os::unix::fs::PermissionsExt, path::{self, Path}};
-use std::fs::{self, File};
+use std::fs::{self, File, read_to_string};
 
 use log::info;
 
@@ -103,6 +103,17 @@ pub fn setup_userns(pid: &i32) {
         .expect("unable to open gid_map");
     gidmap_file.write_all(gidmap_content.as_bytes())
         .expect("unable to write to gid_map");
+
+    info!("done setting up userns");
+
+    // Display contents
+    let uid_map = read_to_string(&uidmap_path).unwrap_or_else(|e| format!("Error reading uid_map: {}", e));
+    let gid_map = read_to_string(&gidmap_path).unwrap_or_else(|e| format!("Error reading gid_map: {}", e));
+    let setgroups = read_to_string(&setgroups_path).unwrap_or_else(|e| format!("Error reading setgroups: {}", e));
+
+    info!("uid_map:\n{}", uid_map.trim());
+    info!("gid_map:\n{}", gid_map.trim());
+    info!("setgroups:\n{}", setgroups.trim());
 
     info!("done setting up userns");
 }
