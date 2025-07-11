@@ -5,7 +5,7 @@ use std::fs::{self, File};
 
 use log::info;
 
-use nix::{libc::{setgid, setuid}, mount::{mount, umount2, MntFlags, MsFlags}, sched::{self, CloneFlags}, unistd::{self, Gid, Uid}};
+use nix::{mount::{mount, umount2, MntFlags, MsFlags}, sched::{self, CloneFlags}, unistd::{self, Gid, Uid}};
 use interprocess::unnamed_pipe::{Sender, Recver};
 
 
