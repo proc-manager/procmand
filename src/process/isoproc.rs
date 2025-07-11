@@ -164,19 +164,18 @@ pub fn setup_mntns(pcfg: &ProcessConfig) {
     println!("guid: {}", unistd::getgid());
     println!("uid: {}", unistd::getuid());
 
-    unistd::setuid(0.into()).expect("unable to set uid");
-    unistd::setgid(0.into()).expect("unable to set gid");
-
     let new_root = format!("{}/rootfs", pcfg.context_dir);    
     let put_old  = format!("{}/.put_old", new_root);
 
     let new_root_path = Path::new(&new_root);
     let put_old_path  = Path::new(&put_old);
 
-
     let mut new_root_perm = fs::metadata(new_root_path).expect("unable to get new root perms").permissions();
     new_root_perm.set_mode(0o777);
     fs::set_permissions(new_root_path, new_root_perm).expect("unable to set root permissions");
+
+    unistd::setuid(0.into()).expect("unable to set uid");
+    unistd::setgid(0.into()).expect("unable to set gid");
 
     // ensure no shared propagation
     info!("ensuring no shared propagation");
