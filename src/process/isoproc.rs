@@ -1,5 +1,6 @@
 use crate::common::models::ProcessConfig;
 
+use std::collections::HashMap;
 use std::{io::{Read, Write}, os::unix::fs::PermissionsExt, path::Path};
 use std::fs::{self, File, read_to_string};
 use std::ffi::CString;
@@ -11,6 +12,13 @@ use nix::{mount::{mount, umount2, MntFlags, MsFlags}, sched::{self, CloneFlags},
 use nix::sys::wait::{waitpid, WaitStatus};
 use interprocess::unnamed_pipe::{Sender, Recver};
 use interprocess::os::unix as ipc_unix;
+
+
+fn hashmap_to_cstring_env(env_map: &HashMap<String, String>) -> Vec<CString> {
+    env_map.iter()
+        .map(|(k, v)| CString::new(format!("{}={}", k, v)).unwrap())
+        .collect()
+}
 
 
 pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender) {
@@ -100,14 +108,12 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
 
             let path = CString::new("/bin/sh").unwrap();
 
-            // Arguments: argv[0] is usually the binary name
             let argv = [
                 CString::new("sh").unwrap(),
                 CString::new("-i").unwrap(), // interactive
             ];
 
-            // Environment: inherit from current process
-            let env = [CString::new("PATH=/usr/bin:/bin").unwrap()];
+            let env = hashmap_to_cstring_env(&pcfg.env);
 
             unistd::execve(&path, &argv, &env).expect("execve failed");
 
