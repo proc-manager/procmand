@@ -3,12 +3,10 @@ use crate::common::models::ProcessConfig;
 use std::{io::{Read, Write}, os::unix::fs::PermissionsExt, path::Path};
 use std::fs::{self, File, read_to_string};
 
-use log::{info, error};
+use log::info;
 
-use fork::{fork, Fork};
 use nix::{mount::{mount, umount2, MntFlags, MsFlags}, sched::{self, CloneFlags}, unistd};
 use interprocess::unnamed_pipe::{Sender, Recver};
-use interprocess::os::unix as ipc_unix;
 
 
 pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender) {
