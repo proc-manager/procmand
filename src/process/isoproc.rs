@@ -12,11 +12,10 @@ use interprocess::os::unix as ipc_unix;
 
 
 pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender) {
-    
     info!("setting up the isolated process");
 
     // unshare 
-    sched::unshare(CloneFlags::CLONE_NEWUSER | CloneFlags::CLONE_NEWPID).expect("unable to clone newuser");
+    sched::unshare(CloneFlags::CLONE_NEWUSER).expect("unable to clone newuser");
 
     // notify parent process to do post unshare setup
     sndr.write_all(b"OK").expect("error writing");
@@ -26,57 +25,22 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
     recv.read_exact(&mut buf[..]).expect("error reading");
     info!("child - received: {:?}", std::str::from_utf8(&buf).unwrap());
 
-    let (mut c_send, mut p_recv) = ipc_unix::unnamed_pipe::pipe(false)
-        .expect("error creating c->p pipe");
+    let cf = CloneFlags::CLONE_NEWNS 
+        | CloneFlags::CLONE_NEWPID 
+        | CloneFlags::CLONE_NEWUTS 
+        | CloneFlags::CLONE_NEWNET;
 
-    match fork() {
-        Ok(Fork::Parent(child)) => {
-            unistd::close(c_send).expect("unable to close c_send for grandchild");
+    sched::unshare(cf).expect("cannot unshare");
 
-            // Display contents
-            //
-            let uidmap_path = format!("/proc/{}/uid_map", child);
-            let gidmap_path = format!("/proc/{}/gid_map", child);
-            let setgroups_path = format!("/proc/{}/setgroups", child);
-            let uid_map = read_to_string(&uidmap_path).unwrap_or_else(|e| format!("Error reading uid_map: {}", e));
-            let gid_map = read_to_string(&gidmap_path).unwrap_or_else(|e| format!("Error reading gid_map: {}", e));
-            let setgroups = read_to_string(&setgroups_path).unwrap_or_else(|e| format!("Error reading setgroups: {}", e));
+    setup_mntns(pcfg);
 
-            info!("uid_map:\n{}", uid_map.trim());
-            info!("gid_map:\n{}", gid_map.trim());
-            info!("setgroups:\n{}", setgroups.trim());
+    info!("setting up utsns");
+    setup_utsns();
+    info!("done setting up utsns");
 
-            info!("grandchild has pid: {}", child);
-            info!("and now we wait");
-            let mut buf = [0; 2];
-            p_recv.read_exact(&mut buf[..]).expect("error reading");
-            sndr.write_all(b"OK").expect("error writing");
-            
-            info!("hello from isolated process");    
-        },
-        Ok(Fork::Child) => {
-            unistd::close(p_recv).expect("unable to close c_recv in grandchild");
-
-            unistd::setgid(0.into()).expect("setgid failed");
-            unistd::setuid(0.into()).expect("setuid failed");
-
-            let cf = CloneFlags::CLONE_NEWNS 
-                | CloneFlags::CLONE_NEWUTS 
-                | CloneFlags::CLONE_NEWNET;
-
-            sched::unshare(cf).expect("cannot unshare");
-
-            setup_mntns(pcfg);
-
-            info!("setting up utsns");
-            setup_utsns();
-            info!("done setting up utsns");
-            c_send.write_all(b"OK").expect("unable to send OK from grandshild");
-        }, 
-        Err(err) => {
-            error!("unable to fork under child process: {}", err);
-        }
-    }
+    sndr.write_all(b"OK").expect("error writing");
+    
+    info!("hello from isolated process");    
 
     sndr.write_all(b"OK").expect("error writing");
 
@@ -177,9 +141,11 @@ pub fn setup_mntns(pcfg: &ProcessConfig) {
     let new_root_path = Path::new(&new_root);
     let put_old_path  = Path::new(&put_old);
 
+    /*
     let mut new_root_perm = fs::metadata(new_root_path).expect("unable to get new root perms").permissions();
     new_root_perm.set_mode(0o777);
     fs::set_permissions(new_root_path, new_root_perm).expect("unable to set root permissions");
+    */
 
     // ensure no shared propagation
     info!("ensuring no shared propagation");
