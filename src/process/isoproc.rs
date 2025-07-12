@@ -3,10 +3,12 @@ use crate::common::models::ProcessConfig;
 use std::{io::{Read, Write}, os::unix::fs::PermissionsExt, path::Path};
 use std::fs::{self, File, read_to_string};
 
-use log::info;
+use log::{info, error};
 
+use fork::{fork, Fork};
 use nix::{mount::{mount, umount2, MntFlags, MsFlags}, sched::{self, CloneFlags}, unistd};
 use interprocess::unnamed_pipe::{Sender, Recver};
+use interprocess::os::unix as ipc_unix;
 
 
 pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender) {
@@ -14,7 +16,7 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
     info!("setting up the isolated process");
 
     // unshare 
-    sched::unshare(CloneFlags::CLONE_NEWUSER).expect("unable to clone newuser");
+    sched::unshare(CloneFlags::CLONE_NEWUSER | CloneFlags::CLONE_NEWPID).expect("unable to clone newuser");
 
     // notify parent process to do post unshare setup
     sndr.write_all(b"OK").expect("error writing");
@@ -24,22 +26,39 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
     recv.read_exact(&mut buf[..]).expect("error reading");
     info!("child - received: {:?}", std::str::from_utf8(&buf).unwrap());
 
-    let cf = CloneFlags::CLONE_NEWNS 
-        | CloneFlags::CLONE_NEWPID 
-        | CloneFlags::CLONE_NEWUTS 
-        | CloneFlags::CLONE_NEWNET;
+    let (mut c_send, mut p_recv) = ipc_unix::unnamed_pipe::pipe(false)
+        .expect("error creating c->p pipe");
 
-    sched::unshare(cf).expect("cannot unshare");
+    match fork() {
+        Ok(Fork::Parent(child)) => {
+            unistd::close(c_send).expect("unable to close c_send for grandchild");
+            info!("grandchild has pid: {}", child);
+            info!("and now we wait");
+            let mut buf = [0; 2];
+            p_recv.read_exact(&mut buf[..]).expect("error reading");
+            sndr.write_all(b"OK").expect("error writing");
+            
+            info!("hello from isolated process");    
+        },
+        Ok(Fork::Child) => {
+            unistd::close(p_recv).expect("unable to close c_recv in grandchild");
+            let cf = CloneFlags::CLONE_NEWNS 
+                | CloneFlags::CLONE_NEWUTS 
+                | CloneFlags::CLONE_NEWNET;
 
-    setup_mntns(pcfg);
+            sched::unshare(cf).expect("cannot unshare");
 
-    info!("setting up utsns");
-    setup_utsns();
-    info!("done setting up utsns");
+            setup_mntns(pcfg);
 
-    sndr.write_all(b"OK").expect("error writing");
-    
-    info!("hello from isolated process");    
+            info!("setting up utsns");
+            setup_utsns();
+            info!("done setting up utsns");
+            c_send.write_all(b"OK").expect("unable to send OK from grandshild");
+        }, 
+        Err(err) => {
+            error!("unable to fork under child process: {}", err);
+        }
+    }
 
     sndr.write_all(b"OK").expect("error writing");
 
