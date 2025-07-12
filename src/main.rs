@@ -38,9 +38,11 @@ fn start_process(pcfg: ProcessConfig) {
         Ok(Fork::Parent(child)) => {
             info!("continuing in parent process: {}", child);
 
+            // close child fds
             unistd::close(c_recv).expect("unable to clone c_recv");
             unistd::close(c_send).expect("unable to clone c_send");
             
+            // wait for child process to unshare
             let mut buf = [0; 2];
             p_recv.read_exact(&mut buf).expect("parent: error reading");
             info!("parent - received: {:?}", std::str::from_utf8(&buf).unwrap());

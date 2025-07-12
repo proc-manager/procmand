@@ -94,12 +94,11 @@ pub fn setup_userns(pid: &i32) {
 }
 
 
-fn setup_procfs(pcfg: &ProcessConfig) {
+fn setup_procfs() {
 
     info!("setting up procfs");
 
-    let proc_dir = format!("{}/rootfs/proc", pcfg.context_dir);
-    let proc_path = Path::new(&proc_dir);
+    let proc_path = Path::new("/proc");
     
     info!("removing old proc dir");
     if proc_path.exists() {
@@ -188,7 +187,6 @@ pub fn setup_mntns(pcfg: &ProcessConfig) {
     put_old_perm.set_mode(0o777);
     fs::set_permissions(put_old_path, put_old_perm).expect("unable to set permissions");
 
-    setup_procfs(pcfg);
 
     // pivot root
     info!("pivoting root");
@@ -196,6 +194,8 @@ pub fn setup_mntns(pcfg: &ProcessConfig) {
 
     info!("changing dir to root");
     unistd::chdir("/").expect("unable to chdir to new root");
+
+    setup_procfs();
 
     info!("unmounting put_old");
     let isoproc_put_old = "/.put_old";

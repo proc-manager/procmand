@@ -8,7 +8,8 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 git clone https://github.com/rutu-sh/cloudlab-tools.git && \
   cd cloudlab-tools/tools/generic && \
   make install-go && \
-  cd   
+  cd && \
+  source ${HOME}/.profile
 
 
 // setup procman 
