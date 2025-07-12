@@ -165,13 +165,6 @@ pub fn setup_mntns(pcfg: &ProcessConfig) {
     new_root_perm.set_mode(0o777);
     fs::set_permissions(new_root_path, new_root_perm).expect("unable to set root permissions");
 
-    unistd::setuid(0.into()).expect("unable to set uid");
-    unistd::setgid(0.into()).expect("unable to set gid");
-
-    println!("euid: {}", unistd::geteuid());
-    println!("guid: {}", unistd::getgid());
-    println!("uid: {}", unistd::getuid());
-
     // ensure no shared propagation
     info!("ensuring no shared propagation");
     let msflags = MsFlags::MS_REC | MsFlags::MS_PRIVATE;
