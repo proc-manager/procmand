@@ -57,6 +57,9 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
         Ok(Fork::Child) => {
             unistd::close(p_recv).expect("unable to close c_recv in grandchild");
 
+            unistd::setgid(0.into()).expect("setgid failed");
+            unistd::setuid(0.into()).expect("setuid failed");
+
             let cf = CloneFlags::CLONE_NEWNS 
                 | CloneFlags::CLONE_NEWUTS 
                 | CloneFlags::CLONE_NEWNET;
