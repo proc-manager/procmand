@@ -16,6 +16,12 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
     
     info!("setting up the isolated process");
 
+    let new_root = format!("{}/rootfs", pcfg.context_dir);
+    let new_root_path = Path::new(&new_root);
+    let mut new_root_perm = fs::metadata(new_root_path).expect("unable to get new root perms").permissions();
+    new_root_perm.set_mode(0o777);
+    fs::set_permissions(new_root_path, new_root_perm).expect("unable to set root permissions");
+
     // unshare 
     sched::unshare(CloneFlags::CLONE_NEWUSER | CloneFlags::CLONE_NEWPID).expect("unable to clone newuser");
 
@@ -178,11 +184,7 @@ pub fn setup_mntns(pcfg: &ProcessConfig) {
     let new_root_path = Path::new(&new_root);
     let put_old_path  = Path::new(&put_old);
 
-    /*
-    let mut new_root_perm = fs::metadata(new_root_path).expect("unable to get new root perms").permissions();
-    new_root_perm.set_mode(0o777);
-    fs::set_permissions(new_root_path, new_root_perm).expect("unable to set root permissions");
-    */
+
 
     // ensure no shared propagation
     info!("ensuring no shared propagation");
