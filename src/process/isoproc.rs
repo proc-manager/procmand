@@ -91,14 +91,11 @@ pub fn setup_utsns() {
 pub fn setup_userns(pid: &i32) {
     info!("setting up userns");
 
-    let uid = 1000;
-
     // Write UID map
     let uidmap_path = format!("/proc/{}/uid_map", pid);
-    let uidmap_content = format!("0 {} 1\n", uid);
     let mut uidmap_file = File::create(Path::new(&uidmap_path))
         .expect("unable to open uid_map");
-    uidmap_file.write_all(uidmap_content.as_bytes())
+    uidmap_file.write_all(b"0 1000 1\n")
         .expect("unable to write to uid_map");
 
     // Must deny setgroups *before* writing gid_map
@@ -110,10 +107,9 @@ pub fn setup_userns(pid: &i32) {
 
     // Write GID map
     let gidmap_path = format!("/proc/{}/gid_map", pid);
-    let gidmap_content = format!("0 {} 1\n", uid);
     let mut gidmap_file = File::create(Path::new(&gidmap_path))
         .expect("unable to open gid_map");
-    gidmap_file.write_all(gidmap_content.as_bytes())
+    gidmap_file.write_all(b"0 1000 1\n")
         .expect("unable to write to gid_map");
 
     info!("done setting up userns");
