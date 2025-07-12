@@ -2,11 +2,13 @@ use crate::common::models::ProcessConfig;
 
 use std::{io::{Read, Write}, os::unix::fs::PermissionsExt, path::Path};
 use std::fs::{self, File, read_to_string};
+use std::ffi::CString;
 
 use log::{info, error};
 
-use fork::{fork, Fork};
-use nix::{mount::{mount, umount2, MntFlags, MsFlags}, sched::{self, CloneFlags}, unistd};
+use fork::{fork, Fork}; 
+use nix::{mount::{mount, umount2, MntFlags, MsFlags}, sched::{self, CloneFlags}, unistd::{self, Pid}};
+use nix::sys::wait::{waitpid, WaitStatus};
 use interprocess::unnamed_pipe::{Sender, Recver};
 use interprocess::os::unix as ipc_unix;
 
@@ -60,6 +62,21 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
             sndr.write_all(b"OK").expect("error writing");
             
             info!("hello from isolated process");    
+
+            let c_pid = Pid::from_raw(child);
+            match waitpid(c_pid, None) {
+                Ok(WaitStatus::Exited(pid, code)) => {
+                    println!("Child {} exited with status {}", pid, code);
+                }
+                Ok(status) => {
+                    println!("Child exited with other status: {:?}", status);
+                }
+                Err(e) => {
+                    eprintln!("waitpid failed: {}", e);
+                }
+            }
+
+            sndr.write_all(b"OK").expect("error writing");
         },
         Ok(Fork::Child) => {
             unistd::close(p_recv).expect("unable to close c_recv in grandchild");
@@ -78,14 +95,27 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
             info!("setting up utsns");
             setup_utsns();
             info!("done setting up utsns");
-            c_send.write_all(b"OK").expect("unable to send OK from grandshild");
+
+            c_send.write_all(b"OK").expect("unable to write to parent");
+
+            let path = CString::new("/bin/sh").unwrap();
+
+            // Arguments: argv[0] is usually the binary name
+            let argv = [
+                CString::new("sh").unwrap(),
+                CString::new("-i").unwrap(), // interactive
+            ];
+
+            // Environment: inherit from current process
+            let env = [CString::new("PATH=/usr/bin:/bin").unwrap()];
+
+            unistd::execve(&path, &argv, &env).expect("execve failed");
+
         }, 
         Err(err) => {
             error!("unable to fork under child process: {}", err);
         }
     }
-
-    sndr.write_all(b"OK").expect("error writing");
 
 }
 
