@@ -32,6 +32,20 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
     match fork() {
         Ok(Fork::Parent(child)) => {
             unistd::close(c_send).expect("unable to close c_send for grandchild");
+
+            // Display contents
+            //
+            let uidmap_path = format!("/proc/{}/uid_map", child);
+            let gidmap_path = format!("/proc/{}/gid_map", child);
+            let setgroups_path = format!("/proc/{}/setgroups", child);
+            let uid_map = read_to_string(&uidmap_path).unwrap_or_else(|e| format!("Error reading uid_map: {}", e));
+            let gid_map = read_to_string(&gidmap_path).unwrap_or_else(|e| format!("Error reading gid_map: {}", e));
+            let setgroups = read_to_string(&setgroups_path).unwrap_or_else(|e| format!("Error reading setgroups: {}", e));
+
+            info!("uid_map:\n{}", uid_map.trim());
+            info!("gid_map:\n{}", gid_map.trim());
+            info!("setgroups:\n{}", setgroups.trim());
+
             info!("grandchild has pid: {}", child);
             info!("and now we wait");
             let mut buf = [0; 2];
@@ -42,6 +56,7 @@ pub fn setup_isoproc(pcfg: &ProcessConfig, recv: &mut Recver, sndr: &mut Sender)
         },
         Ok(Fork::Child) => {
             unistd::close(p_recv).expect("unable to close c_recv in grandchild");
+
             let cf = CloneFlags::CLONE_NEWNS 
                 | CloneFlags::CLONE_NEWUTS 
                 | CloneFlags::CLONE_NEWNET;
@@ -101,6 +116,8 @@ pub fn setup_userns(pid: &i32) {
     info!("done setting up userns");
 
     // Display contents
+    //
+    //d
     let uid_map = read_to_string(&uidmap_path).unwrap_or_else(|e| format!("Error reading uid_map: {}", e));
     let gid_map = read_to_string(&gidmap_path).unwrap_or_else(|e| format!("Error reading gid_map: {}", e));
     let setgroups = read_to_string(&setgroups_path).unwrap_or_else(|e| format!("Error reading setgroups: {}", e));
