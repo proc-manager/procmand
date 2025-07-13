@@ -1,6 +1,5 @@
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
-
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ProcessConfig {
@@ -13,7 +12,6 @@ pub struct ProcessConfig {
     pub env: HashMap<String, String>,
 }
 
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Image {
     pub id: String,
@@ -24,24 +22,19 @@ pub struct Image {
     pub created: String, // TODO: maybe a proper datetime?
 }
 
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Job {
     pub name: String,
     pub command: Vec<String>,
 }
 
-
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Network {
     pub ports: Vec<Port>,
 }
-
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Port {
     pub host_port: u16,
     pub proc_port: u16,
 }
-
