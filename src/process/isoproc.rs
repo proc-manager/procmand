@@ -241,4 +241,3 @@ pub fn setup_mntns(pcfg: &ProcessConfig) {
     fs::remove_dir(isoproc_put_old_path).expect("unable to rmdir put_old");
 }
 
-

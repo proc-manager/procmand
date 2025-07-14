@@ -12,7 +12,7 @@ use nix::unistd;
 use process::parser;
 
 use common::models::ProcessConfig;
-use process::isoproc;
+use process::{isoproc, netns};
 
 /*
     Responsible for:
@@ -26,7 +26,7 @@ use process::isoproc;
 
 */
 #[allow(dead_code)]
-fn start_process(pcfg: ProcessConfig) {
+async fn start_process(pcfg: ProcessConfig) {
     let (mut p_send, mut c_recv) =
         ipc_unix::unnamed_pipe::pipe(false).expect("error creating p->c pipe");
     let (mut c_send, mut p_recv) =
@@ -47,6 +47,8 @@ fn start_process(pcfg: ProcessConfig) {
                 "parent - received: {:?}",
                 std::str::from_utf8(&buf).unwrap()
             );
+
+            netns::create_veth_pair().await;
 
             isoproc::setup_userns(&child);
 
@@ -80,7 +82,8 @@ fn start_process(pcfg: ProcessConfig) {
     }
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Builder::from_default_env()
         .filter_level(LevelFilter::Info)
         .init();
