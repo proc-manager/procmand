@@ -91,7 +91,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("reading the json config");
 
     let config = parser::parse("process.json")?;
-    start_process(config);
+    start_process(config).await;
 
     info!("done reading json config");
 
