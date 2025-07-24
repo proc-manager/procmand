@@ -555,6 +555,7 @@ version = "0.1.0"
 dependencies = [
  "env_logger",
  "fork",
+ "futures",
  "interprocess",
  "log",
  "netlink-packet-core",

@@ -48,6 +48,7 @@ async fn start_process(pcfg: ProcessConfig) {
                 std::str::from_utf8(&buf).unwrap()
             );
 
+
             netns::create_veth_pair().await;
 
             isoproc::setup_userns(&child);
