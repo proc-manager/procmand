@@ -19,3 +19,8 @@ sudo nsenter --target <PID> --pid --mount --uts --preserve-credentials /bin/sh
 - [ ] Net
 - [ ] Cgroups
 
+### Exception Handling 
+
+Currently, we just panic using expect. 
+Once the namespaces are properly set up, need to write the exception propagation. 
+
