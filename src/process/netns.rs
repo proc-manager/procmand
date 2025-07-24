@@ -22,6 +22,10 @@ pub async fn create_veth_pair() {
         .await
         .expect("unable to create veth pair");
 
+    println!("created veth pair");
+
+    
+    println!("fetching links");
     let mut links = handle
         .link()
         .get()
@@ -29,6 +33,7 @@ pub async fn create_veth_pair() {
         .execute(); 
 
     if let Some(link) = links.try_next().await.expect("unable retrieve link by name") {
+        println!("got link");
         handle
             .address()
             .add(
@@ -38,6 +43,8 @@ pub async fn create_veth_pair() {
             .await
             .expect("unable to add IP address");
     }
+
+    println!("done")
  
 }
 
