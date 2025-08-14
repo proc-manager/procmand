@@ -56,7 +56,7 @@ pub async fn set_ns_veth_ip(handle: &Handle) {
     let mut links = handle
         .link()
         .get()
-        .match_name("veth1".into())
+        .match_name("veth1-peer".into())
         .execute(); 
 
     if let Some(link) = links.try_next().await.expect("unable retrieve link by name") {
