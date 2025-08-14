@@ -84,14 +84,14 @@ async fn start_process(pcfg: ProcessConfig) {
 
             let _ = nix::sched::setns(child_ns_fd, CloneFlags::CLONE_NEWNET);
 
+            netns::set_ns_veth_ip(&handle).await;
+            
             handle
                 .link()
                 .set(LinkUnspec::new_with_name("veth1-peer").up().build())
                 .execute()
                 .await
                 .expect("unable to set veth1-peer up");
-
-            netns::set_ns_veth_ip(&handle).await;
 
             let _ = nix::sched::setns(parent_ns_fd, CloneFlags::CLONE_NEWNET);
 
