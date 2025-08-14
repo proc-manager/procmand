@@ -2,6 +2,8 @@ mod common;
 mod process;
 
 use std::io::{Read, Write};
+use std::fs::File;
+use std::os::unix::io::IntoRawFd; 
 
 use env_logger::Builder;
 use log::{LevelFilter, info};
@@ -43,15 +45,26 @@ async fn start_process(pcfg: ProcessConfig) {
             // wait for child process to unshare
             let mut buf = [0; 2];
             p_recv.read_exact(&mut buf).expect("parent: error reading");
-            info!(
-                "parent - received: {:?}",
-                std::str::from_utf8(&buf).unwrap()
-            );
-
-
-            netns::create_veth_pair().await;
+            info!("parent - received: {:?}", std::str::from_utf8(&buf).unwrap());
 
             isoproc::setup_userns(&child);
+
+            let handle = netns::get_netlink_handle();
+
+            netns::create_veth_pair(&handle).await;
+            netns::set_root_veth_ip(&handle).await;
+
+            let file = File::open(format!("/proc/{child}/ns/net"))
+                .expect("cannot open child's net ns file");
+
+            let fd = file.into_raw_fd();
+
+            netns::move_veth_to_netns(
+                &handle, 
+                &String::from("veth1-peer"), 
+                &fd
+            ).await;
+
 
             p_send.write_all(b"OK").expect("parent: error writing");
 
