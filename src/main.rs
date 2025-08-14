@@ -7,6 +7,7 @@ use std::os::fd::{AsFd, AsRawFd};
 
 use env_logger::Builder;
 use log::{LevelFilter, info};
+use std::time::Duration;
 
 use fork::{Fork, fork};
 use interprocess::os::unix as ipc_unix;
@@ -84,6 +85,8 @@ async fn start_process(pcfg: ProcessConfig) {
 
             let _ = nix::sched::setns(child_ns_fd, CloneFlags::CLONE_NEWNET);
 
+            info!("waiting 5 sec");
+            std::thread::sleep(Duration::from_secs(5));
             netns::set_ns_veth_ip(&handle).await;
             
             handle
