@@ -88,13 +88,15 @@ async fn start_process(pcfg: ProcessConfig) {
             info!("waiting 5 sec");
             std::thread::sleep(Duration::from_secs(5));
             netns::set_ns_veth_ip(&handle).await;
-            
+           
+            /*
             handle
                 .link()
                 .set(LinkUnspec::new_with_name("veth1-peer").up().build())
                 .execute()
                 .await
                 .expect("unable to set veth1-peer up");
+            */
 
             let _ = nix::sched::setns(parent_ns_fd, CloneFlags::CLONE_NEWNET);
 
