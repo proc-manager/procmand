@@ -52,7 +52,7 @@ pub async fn set_root_veth_ip(handle: &Handle) {
 
 pub async fn set_ns_veth_ip(handle: &Handle) {
 
-    info!("setting root veth ip"); 
+    info!("setting ns veth ip"); 
     let mut links = handle
         .link()
         .get()
