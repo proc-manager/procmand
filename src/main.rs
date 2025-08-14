@@ -3,6 +3,7 @@ mod process;
 
 use std::io::{Read, Write};
 use std::fs::File;
+use std::os::fd::{AsFd, AsRawFd};
 use std::os::unix::io::IntoRawFd; 
 
 use env_logger::Builder;
@@ -10,11 +11,13 @@ use log::{LevelFilter, info};
 
 use fork::{Fork, fork};
 use interprocess::os::unix as ipc_unix;
+use nix::sched::CloneFlags;
 use nix::unistd;
 use process::parser;
 
 use common::models::ProcessConfig;
 use process::{isoproc, netns};
+use rtnetlink::LinkUnspec;
 
 /*
     Responsible for:
@@ -54,17 +57,44 @@ async fn start_process(pcfg: ProcessConfig) {
             netns::create_veth_pair(&handle).await;
             netns::set_root_veth_ip(&handle).await;
 
-            let file = File::open(format!("/proc/{child}/ns/net"))
+
+            let self_pid = std::process::id() as i32;
+
+            let child_ns_file = File::open(format!("/proc/{child}/ns/net"))
+                .expect("cannot open child's net ns file");
+            let parent_ns_file = File::open(format!("/proc/{self_pid}/ns/net"))
                 .expect("cannot open child's net ns file");
 
-            let fd = file.into_raw_fd();
+
+            let child_ns_fd = child_ns_file.as_fd();
+            let child_ns_rawfd = child_ns_file.as_raw_fd();
+            let parent_ns_fd = parent_ns_file.as_fd();
 
             netns::move_veth_to_netns(
                 &handle, 
                 &String::from("veth1-peer"), 
-                &fd
+                &child_ns_rawfd
             ).await;
 
+            handle
+                .link()
+                .set(LinkUnspec::new_with_name("veth1").up().build())
+                .execute()
+                .await
+                .expect("unable to set veth1 up");
+
+            let _ = nix::sched::setns(child_ns_fd, CloneFlags::CLONE_NEWNET);
+
+            handle
+                .link()
+                .set(LinkUnspec::new_with_name("veth1-peer").up().build())
+                .execute()
+                .await
+                .expect("unable to set veth1-peer up");
+
+            netns::set_ns_veth_ip(&handle).await;
+
+            let _ = nix::sched::setns(parent_ns_fd, CloneFlags::CLONE_NEWNET);
 
             p_send.write_all(b"OK").expect("parent: error writing");
 

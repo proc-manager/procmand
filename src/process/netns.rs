@@ -1,7 +1,7 @@
 use log::info;
 use netlink_packet_route::link::{LinkMessage, LinkAttribute};
 use rtnetlink::{self, LinkVeth, Handle};
-use std::{default, net::{IpAddr, Ipv4Addr}};
+use std::net::{IpAddr, Ipv4Addr};
 use futures::stream::TryStreamExt;
 
 
@@ -40,18 +40,16 @@ pub async fn set_root_veth_ip(handle: &Handle) {
     if let Some(link) = links.try_next().await.expect("unable retrieve link by name") {
         handle
             .address()
-            .add(link.header.index, IpAddr::V4(Ipv4Addr::new(192, 168, 100, 1)), 24)
+            .add(link.header.index, IpAddr::V4(Ipv4Addr::new(10, 1, 1, 1)), 24)
             .execute()
             .await
             .expect("unable to add IP address");
     }
 
     info!("done setting root veth IP");
-
 }
 
 
-#[allow(dead_code)]
 pub async fn set_ns_veth_ip(handle: &Handle) {
 
     info!("setting root veth ip"); 
@@ -64,7 +62,7 @@ pub async fn set_ns_veth_ip(handle: &Handle) {
     if let Some(link) = links.try_next().await.expect("unable retrieve link by name") {
         handle
             .address()
-            .add(link.header.index, IpAddr::V4(Ipv4Addr::new(192, 168, 100, 2)), 24)
+            .add(link.header.index, IpAddr::V4(Ipv4Addr::new(10, 1, 1, 2)), 24)
             .execute()
             .await
             .expect("unable to add IP address");

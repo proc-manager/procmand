@@ -14,7 +14,7 @@ git clone https://github.com/rutu-sh/cloudlab-tools.git && \
 
 // setup procman 
 
-git clone https://github.com/rutu-sh/procman && \
+git clone https://github.com/proc-manager/procman.git && \
     cd procman && \
     git checkout dev && \
     cd cmd && \
@@ -30,7 +30,6 @@ sudo procman v0.0.1
 
 
 // setup procmand 
-git clone https://github.com/rutu-sh/procmand && \
-    cd procmand && \
-    git checkout dev
+git clone https://github.com/proc-manager/procmand.git && \
+    cd procmand
 
