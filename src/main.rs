@@ -87,10 +87,11 @@ async fn start_process(pcfg: ProcessConfig) {
 
             info!("waiting 5 sec");
             std::thread::sleep(Duration::from_secs(5));
-            netns::set_ns_veth_ip(&handle).await;
            
             {
                 let ns_handle = netns::get_netlink_handle();
+                
+                netns::set_ns_veth_ip(&ns_handle).await;
 
                 ns_handle
                     .link()
