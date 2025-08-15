@@ -4,6 +4,7 @@ mod process;
 use std::io::{Read, Write};
 use std::fs::File;
 use std::os::fd::{AsFd, AsRawFd};
+use std::error::Error;
 
 use env_logger::Builder;
 use log::{LevelFilter, info};
@@ -30,12 +31,11 @@ use rtnetlink::LinkUnspec;
         The start_process function forks and sets up the new process.
 
 */
-#[allow(dead_code)]
-async fn start_process(pcfg: ProcessConfig) {
-    let (mut p_send, mut c_recv) =
-        ipc_unix::unnamed_pipe::pipe(false).expect("error creating p->c pipe");
-    let (mut c_send, mut p_recv) =
-        ipc_unix::unnamed_pipe::pipe(false).expect("error creating c->p pipe");
+async fn start_process(pcfg: ProcessConfig) -> Result<(), Box<dyn Error>> {
+    let (mut p_send, mut c_recv) = ipc_unix::unnamed_pipe::pipe(false)
+                                    .expect("error creating p->c pipe");
+    let (mut c_send, mut p_recv) = ipc_unix::unnamed_pipe::pipe(false)
+                                    .expect("error creating c->p pipe");
 
     match fork() {
         Ok(Fork::Parent(child)) => {
@@ -52,10 +52,10 @@ async fn start_process(pcfg: ProcessConfig) {
 
             isoproc::setup_userns(&child);
 
-            let handle = netns::get_netlink_handle();
+            let handle = netns::get_netlink_handle()?;
 
-            netns::create_veth_pair(&handle).await;
-            netns::set_root_veth_ip(&handle).await;
+            netns::create_veth_pair(&handle).await?;
+            netns::set_root_veth_ip(&handle).await?;
 
 
             let self_pid = std::process::id() as i32;
@@ -74,14 +74,13 @@ async fn start_process(pcfg: ProcessConfig) {
                 &handle, 
                 &String::from("veth1-peer"), 
                 &child_ns_rawfd
-            ).await;
+            ).await?;
 
             handle
                 .link()
                 .set(LinkUnspec::new_with_name("veth1").up().build())
                 .execute()
-                .await
-                .expect("unable to set veth1 up");
+                .await?;
 
             let _ = nix::sched::setns(child_ns_fd, CloneFlags::CLONE_NEWNET);
 
@@ -91,23 +90,22 @@ async fn start_process(pcfg: ProcessConfig) {
 
             {
 
-                let ns_handle = netns::get_netlink_handle();
+                let ns_handle = netns::get_netlink_handle()?;
 
-                netns::set_ns_veth_ip(&ns_handle).await;
+                netns::set_ns_veth_ip(&ns_handle).await?;
                 ns_handle
                     .link()
                     .set(LinkUnspec::new_with_name("veth1-peer").up().build())
                     .execute()
-                    .await
-                    .expect("unable to set veth1-peer up");
+                    .await?;
             }
 
             let _ = nix::sched::setns(parent_ns_fd, CloneFlags::CLONE_NEWNET);
 
-            p_send.write_all(b"OK").expect("parent: error writing");
+            p_send.write_all(b"OK")?;
 
             let mut buf = [0; 2];
-            p_recv.read_exact(&mut buf).expect("parent: error reading");
+            p_recv.read_exact(&mut buf)?;
             info!(
                 "parent - received: {:?}",
                 std::str::from_utf8(&buf).unwrap()
@@ -132,10 +130,12 @@ async fn start_process(pcfg: ProcessConfig) {
             info!("fork failed");
         }
     }
+
+    Ok(())
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), Box<dyn Error>> {
     Builder::from_default_env()
         .filter_level(LevelFilter::Info)
         .init();
@@ -143,7 +143,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("reading the json config");
 
     let config = parser::parse("process.json")?;
-    start_process(config).await;
+    start_process(config).await?;
 
     info!("done reading json config");
 
