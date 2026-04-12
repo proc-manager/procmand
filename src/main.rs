@@ -1,13 +1,12 @@
 mod common;
 mod process;
 
-use std::io::{Read, Write};
 use std::fs::File;
+use std::io::{Read, Write};
 use std::os::fd::{AsFd, AsRawFd};
-use std::error::Error;
 
 use env_logger::Builder;
-use log::{LevelFilter, info};
+use log::{LevelFilter, error, info};
 use std::time::Duration;
 
 use fork::{Fork, fork};
@@ -16,10 +15,11 @@ use nix::sched::CloneFlags;
 use nix::unistd;
 use process::parser;
 
+use anyhow::{Context, Result};
+
 use common::models::ProcessConfig;
 use process::{isoproc, netns};
 use rtnetlink::LinkUnspec;
-
 /*
     Responsible for:
         1. reading from the unix socket for new thread requests
@@ -31,50 +31,50 @@ use rtnetlink::LinkUnspec;
         The start_process function forks and sets up the new process.
 
 */
-async fn start_process(pcfg: ProcessConfig) -> Result<(), Box<dyn Error>> {
-    let (mut p_send, mut c_recv) = ipc_unix::unnamed_pipe::pipe(false)
-                                    .expect("error creating p->c pipe");
-    let (mut c_send, mut p_recv) = ipc_unix::unnamed_pipe::pipe(false)
-                                    .expect("error creating c->p pipe");
+async fn start_process(pcfg: ProcessConfig) -> Result<()> {
+    let (mut p_send, mut c_recv) =
+        ipc_unix::unnamed_pipe::pipe(false).context("error creating p->c pipe")?;
+    let (mut c_send, mut p_recv) =
+        ipc_unix::unnamed_pipe::pipe(false).context("error creating c->p pipe")?;
 
     match fork() {
         Ok(Fork::Parent(child)) => {
             info!("continuing in parent process: {}", child);
 
             // close child fds
-            unistd::close(c_recv).expect("unable to clone c_recv");
-            unistd::close(c_send).expect("unable to clone c_send");
+            unistd::close(c_recv).context("unable to clone c_recv")?;
+            unistd::close(c_send).context("unable to clone c_send")?;
 
             // wait for child process to unshare
             let mut buf = [0; 2];
-            p_recv.read_exact(&mut buf).expect("parent: error reading");
-            info!("parent - received: {:?}", std::str::from_utf8(&buf).unwrap());
+            p_recv
+                .read_exact(&mut buf)
+                .context("parent: error reading")?;
+            info!(
+                "parent - received: {:?}",
+                std::str::from_utf8(&buf).unwrap()
+            );
 
-            isoproc::setup_userns(&child);
+            isoproc::setup_userns(&child)?;
 
             let handle = netns::get_netlink_handle()?;
 
             netns::create_veth_pair(&handle).await?;
             netns::set_root_veth_ip(&handle).await?;
 
-
             let self_pid = std::process::id() as i32;
 
             let child_ns_file = File::open(format!("/proc/{child}/ns/net"))
-                .expect("cannot open child's net ns file");
+                .context("cannot open child's net ns file")?;
             let parent_ns_file = File::open(format!("/proc/{self_pid}/ns/net"))
-                .expect("cannot open child's net ns file");
-
+                .context("cannot open child's net ns file")?;
 
             let child_ns_fd = child_ns_file.as_fd();
             let child_ns_rawfd = child_ns_file.as_raw_fd();
             let parent_ns_fd = parent_ns_file.as_fd();
 
-            netns::move_veth_to_netns(
-                &handle, 
-                &String::from("veth1-peer"), 
-                &child_ns_rawfd
-            ).await?;
+            netns::move_veth_to_netns(&handle, &String::from("veth1-peer"), &child_ns_rawfd)
+                .await?;
 
             handle
                 .link()
@@ -87,9 +87,7 @@ async fn start_process(pcfg: ProcessConfig) -> Result<(), Box<dyn Error>> {
             info!("waiting 5 sec");
             std::thread::sleep(Duration::from_secs(5));
 
-
             {
-
                 let ns_handle = netns::get_netlink_handle()?;
 
                 netns::set_ns_veth_ip(&ns_handle).await?;
@@ -114,7 +112,9 @@ async fn start_process(pcfg: ProcessConfig) -> Result<(), Box<dyn Error>> {
             info!("child process setup done: waiting to exit");
 
             let mut buf = [0; 2];
-            p_recv.read_exact(&mut buf).expect("parent: error reading");
+            p_recv
+                .read_exact(&mut buf)
+                .context("parent: error reading")?;
             info!(
                 "parent - received: {:?}",
                 std::str::from_utf8(&buf).unwrap()
@@ -122,9 +122,12 @@ async fn start_process(pcfg: ProcessConfig) -> Result<(), Box<dyn Error>> {
         }
         Ok(Fork::Child) => {
             info!("in child process");
-            unistd::close(p_recv).expect("unable to close p_recv");
-            unistd::close(p_send).expect("unable to close p_send");
-            isoproc::setup_isoproc(&pcfg, &mut c_recv, &mut c_send);
+            unistd::close(p_recv).context("unable to close p_recv")?;
+            unistd::close(p_send).context("unable to close p_send")?;
+            if let Err(e) = isoproc::setup_isoproc(&pcfg, &mut c_recv, &mut c_send) {
+                error!("{:#}", e);
+                std::process::exit(1);
+            }
         }
         Err(_) => {
             info!("fork failed");
@@ -135,7 +138,7 @@ async fn start_process(pcfg: ProcessConfig) -> Result<(), Box<dyn Error>> {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<()> {
     Builder::from_default_env()
         .filter_level(LevelFilter::Info)
         .init();
@@ -143,9 +146,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     info!("reading the json config");
 
     let config = parser::parse("process.json")?;
-    start_process(config).await?;
 
     info!("done reading json config");
+
+    start_process(config).await?;
 
     Ok(())
 }
