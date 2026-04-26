@@ -1,0 +1,580 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Open Container Initiative Runtime Specification Container Configuration Schema (dereferenced, Linux-focused)",
+  "type": "object",
+  "required": ["ociVersion"],
+  "properties": {
+    "ociVersion": {
+      "description": "The version of Open Container Initiative Runtime Specification that the document complies with",
+      "type": "string"
+    },
+    "hostname": {
+      "type": "string"
+    },
+    "domainname": {
+      "type": "string"
+    },
+    "annotations": {
+      "type": "object",
+      "patternProperties": {
+        ".{1,}": { "type": "string" }
+      }
+    },
+    "root": {
+      "description": "Configures the container's root filesystem.",
+      "type": "object",
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string" },
+        "readonly": { "type": "boolean" }
+      }
+    },
+    "mounts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["destination"],
+        "properties": {
+          "destination": { "type": "string" },
+          "source": { "type": "string" },
+          "type": { "type": "string" },
+          "options": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "uidMappings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["containerID", "hostID", "size"],
+              "properties": {
+                "containerID": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+                "hostID": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+                "size": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+              }
+            }
+          },
+          "gidMappings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["containerID", "hostID", "size"],
+              "properties": {
+                "containerID": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+                "hostID": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+                "size": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "process": {
+      "type": "object",
+      "required": ["cwd"],
+      "properties": {
+        "terminal": { "type": "boolean" },
+        "consoleSize": {
+          "type": "object",
+          "required": ["height", "width"],
+          "properties": {
+            "height": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+            "width":  { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 }
+          }
+        },
+        "cwd": { "type": "string" },
+        "args": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "commandLine": { "type": "string" },
+        "env": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "user": {
+          "type": "object",
+          "properties": {
+            "uid": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+            "gid": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+            "umask": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+            "additionalGids": {
+              "type": "array",
+              "items": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+            },
+            "username": { "type": "string" }
+          }
+        },
+        "capabilities": {
+          "type": "object",
+          "properties": {
+            "bounding":    { "type": "array", "items": { "type": "string" } },
+            "permitted":   { "type": "array", "items": { "type": "string" } },
+            "effective":   { "type": "array", "items": { "type": "string" } },
+            "inheritable": { "type": "array", "items": { "type": "string" } },
+            "ambient":     { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "noNewPrivileges": { "type": "boolean" },
+        "apparmorProfile": { "type": "string" },
+        "selinuxLabel":    { "type": "string" },
+        "oomScoreAdj":     { "type": "integer" },
+        "ioPriority": {
+          "type": "object",
+          "required": ["class"],
+          "properties": {
+            "class": {
+              "type": "string",
+              "enum": ["IOPRIO_CLASS_RT", "IOPRIO_CLASS_BE", "IOPRIO_CLASS_IDLE"]
+            },
+            "priority": { "type": "integer", "minimum": -2147483648, "maximum": 2147483647 }
+          }
+        },
+        "scheduler": {
+          "type": "object",
+          "required": ["policy"],
+          "properties": {
+            "policy": {
+              "type": "string",
+              "enum": ["SCHED_OTHER", "SCHED_FIFO", "SCHED_RR", "SCHED_BATCH", "SCHED_ISO", "SCHED_IDLE", "SCHED_DEADLINE"]
+            },
+            "nice":     { "type": "integer", "minimum": -2147483648, "maximum": 2147483647 },
+            "priority": { "type": "integer", "minimum": -2147483648, "maximum": 2147483647 },
+            "flags": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "SCHED_FLAG_RESET_ON_FORK",
+                  "SCHED_FLAG_RECLAIM",
+                  "SCHED_FLAG_DL_OVERRUN",
+                  "SCHED_FLAG_KEEP_POLICY",
+                  "SCHED_FLAG_KEEP_PARAMS",
+                  "SCHED_FLAG_UTIL_CLAMP_MIN",
+                  "SCHED_FLAG_UTIL_CLAMP_MAX"
+                ]
+              }
+            },
+            "runtime":  { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+            "deadline": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+            "period":   { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 }
+          }
+        },
+        "rlimits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type", "soft", "hard"],
+            "properties": {
+              "type": { "type": "string", "pattern": "^RLIMIT_[A-Z]+$" },
+              "soft": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+              "hard": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 }
+            }
+          }
+        },
+        "execCPUAffinity": {
+          "type": "object",
+          "properties": {
+            "initial": { "type": "string", "pattern": "^[0-9, -]*$" },
+            "final":   { "type": "string", "pattern": "^[0-9, -]*$" }
+          }
+        }
+      }
+    },
+    "hooks": {
+      "type": "object",
+      "properties": {
+        "prestart":        { "type": "array", "items": { "$ref": "#/definitions/Hook" } },
+        "createRuntime":   { "type": "array", "items": { "$ref": "#/definitions/Hook" } },
+        "createContainer": { "type": "array", "items": { "$ref": "#/definitions/Hook" } },
+        "startContainer":  { "type": "array", "items": { "$ref": "#/definitions/Hook" } },
+        "poststart":       { "type": "array", "items": { "$ref": "#/definitions/Hook" } },
+        "poststop":        { "type": "array", "items": { "$ref": "#/definitions/Hook" } }
+      }
+    },
+    "linux": {
+      "description": "Linux platform-specific configurations",
+      "type": "object",
+      "properties": {
+        "namespaces": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["mount", "pid", "network", "uts", "ipc", "user", "cgroup", "time"]
+              },
+              "path": { "type": "string" }
+            }
+          }
+        },
+        "uidMappings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["containerID", "hostID", "size"],
+            "properties": {
+              "containerID": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+              "hostID":      { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+              "size":        { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+            }
+          }
+        },
+        "gidMappings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["containerID", "hostID", "size"],
+            "properties": {
+              "containerID": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+              "hostID":      { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+              "size":        { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+            }
+          }
+        },
+        "devices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type", "path"],
+            "properties": {
+              "type":     { "type": "string", "pattern": "^[cbup]$" },
+              "path":     { "type": "string" },
+              "fileMode": { "type": "integer", "minimum": 0, "maximum": 511 },
+              "major":    { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+              "minor":    { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+              "uid":      { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+              "gid":      { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+            }
+          }
+        },
+        "netDevices": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" }
+            }
+          }
+        },
+        "cgroupsPath": { "type": "string" },
+        "rootfsPropagation": {
+          "type": "string",
+          "enum": ["private", "shared", "slave", "unbindable"]
+        },
+        "maskedPaths":   { "type": "array", "items": { "type": "string" } },
+        "readonlyPaths": { "type": "array", "items": { "type": "string" } },
+        "mountLabel":    { "type": "string" },
+        "sysctl": {
+          "type": "object",
+          "patternProperties": {
+            ".{1,}": { "type": "string" }
+          }
+        },
+        "resources": {
+          "type": "object",
+          "properties": {
+            "unified": {
+              "type": "object",
+              "patternProperties": { ".{1,}": { "type": "string" } }
+            },
+            "devices": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["allow"],
+                "properties": {
+                  "allow":  { "type": "boolean" },
+                  "type":   { "type": "string" },
+                  "major":  { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+                  "minor":  { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+                  "access": { "type": "string" }
+                }
+              }
+            },
+            "pids": {
+              "type": "object",
+              "required": ["limit"],
+              "properties": {
+                "limit": { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 }
+              }
+            },
+            "cpu": {
+              "type": "object",
+              "properties": {
+                "cpus":            { "type": "string" },
+                "mems":            { "type": "string" },
+                "period":          { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+                "quota":           { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+                "burst":           { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+                "realtimePeriod":  { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+                "realtimeRuntime": { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+                "shares":          { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+                "idle":            { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 }
+              }
+            },
+            "memory": {
+              "type": "object",
+              "properties": {
+                "limit":            { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+                "reservation":      { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+                "swap":             { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+                "kernel":           { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+                "kernelTCP":        { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+                "swappiness":       { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+                "disableOOMKiller": { "type": "boolean" },
+                "useHierarchy":     { "type": "boolean" },
+                "checkBeforeUpdate":{ "type": "boolean" }
+              }
+            },
+            "hugepageLimits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["pageSize", "limit"],
+                "properties": {
+                  "pageSize": { "type": "string", "pattern": "^[1-9][0-9]*[KMG]B$" },
+                  "limit":    { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 }
+                }
+              }
+            },
+            "blockIO": {
+              "type": "object",
+              "properties": {
+                "weight":     { "type": "integer", "minimum": 0, "maximum": 65535 },
+                "leafWeight": { "type": "integer", "minimum": 0, "maximum": 65535 },
+                "weightDevice": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["major", "minor"],
+                    "properties": {
+                      "major":      { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+                      "minor":      { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+                      "weight":     { "type": "integer", "minimum": 0, "maximum": 65535 },
+                      "leafWeight": { "type": "integer", "minimum": 0, "maximum": 65535 }
+                    }
+                  }
+                },
+                "throttleReadBpsDevice": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["major", "minor"],
+                    "properties": {
+                      "major": { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+                      "minor": { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+                      "rate":  { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 }
+                    }
+                  }
+                },
+                "throttleWriteBpsDevice": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["major", "minor"],
+                    "properties": {
+                      "major": { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+                      "minor": { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+                      "rate":  { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 }
+                    }
+                  }
+                },
+                "throttleReadIOPSDevice": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["major", "minor"],
+                    "properties": {
+                      "major": { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+                      "minor": { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+                      "rate":  { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 }
+                    }
+                  }
+                },
+                "throttleWriteIOPSDevice": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["major", "minor"],
+                    "properties": {
+                      "major": { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+                      "minor": { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+                      "rate":  { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 }
+                    }
+                  }
+                }
+              }
+            },
+            "network": {
+              "type": "object",
+              "properties": {
+                "classID": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+                "priorities": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["name", "priority"],
+                    "properties": {
+                      "name":     { "type": "string" },
+                      "priority": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+                    }
+                  }
+                }
+              }
+            },
+            "rdma": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "hcaHandles": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+                  "hcaObjects": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+                }
+              }
+            }
+          }
+        },
+        "seccomp": {
+          "type": "object",
+          "required": ["defaultAction"],
+          "properties": {
+            "defaultAction": {
+              "type": "string",
+              "enum": ["SCMP_ACT_KILL", "SCMP_ACT_KILL_PROCESS", "SCMP_ACT_KILL_THREAD", "SCMP_ACT_TRAP", "SCMP_ACT_ERRNO", "SCMP_ACT_TRACE", "SCMP_ACT_ALLOW", "SCMP_ACT_LOG", "SCMP_ACT_NOTIFY"]
+            },
+            "defaultErrnoRet":  { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+            "listenerPath":     { "type": "string" },
+            "listenerMetadata": { "type": "string" },
+            "flags": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["SECCOMP_FILTER_FLAG_TSYNC", "SECCOMP_FILTER_FLAG_LOG", "SECCOMP_FILTER_FLAG_SPEC_ALLOW", "SECCOMP_FILTER_FLAG_WAIT_KILLABLE_RECV"]
+              }
+            },
+            "architectures": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "SCMP_ARCH_X86", "SCMP_ARCH_X86_64", "SCMP_ARCH_X32",
+                  "SCMP_ARCH_ARM", "SCMP_ARCH_AARCH64",
+                  "SCMP_ARCH_LOONGARCH64", "SCMP_ARCH_M68K",
+                  "SCMP_ARCH_MIPS", "SCMP_ARCH_MIPS64", "SCMP_ARCH_MIPS64N32",
+                  "SCMP_ARCH_MIPSEL", "SCMP_ARCH_MIPSEL64", "SCMP_ARCH_MIPSEL64N32",
+                  "SCMP_ARCH_PPC", "SCMP_ARCH_PPC64", "SCMP_ARCH_PPC64LE",
+                  "SCMP_ARCH_S390", "SCMP_ARCH_S390X",
+                  "SCMP_ARCH_SH", "SCMP_ARCH_SHEB",
+                  "SCMP_ARCH_PARISC", "SCMP_ARCH_PARISC64",
+                  "SCMP_ARCH_RISCV64"
+                ]
+              }
+            },
+            "syscalls": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["names", "action"],
+                "properties": {
+                  "names":  { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+                  "action": {
+                    "type": "string",
+                    "enum": ["SCMP_ACT_KILL", "SCMP_ACT_KILL_PROCESS", "SCMP_ACT_KILL_THREAD", "SCMP_ACT_TRAP", "SCMP_ACT_ERRNO", "SCMP_ACT_TRACE", "SCMP_ACT_ALLOW", "SCMP_ACT_LOG", "SCMP_ACT_NOTIFY"]
+                  },
+                  "errnoRet": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+                  "args": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["index", "value", "op"],
+                      "properties": {
+                        "index":    { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+                        "value":    { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+                        "valueTwo": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+                        "op": {
+                          "type": "string",
+                          "enum": ["SCMP_CMP_NE", "SCMP_CMP_LT", "SCMP_CMP_LE", "SCMP_CMP_EQ", "SCMP_CMP_GE", "SCMP_CMP_GT", "SCMP_CMP_MASKED_EQ"]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "intelRdt": {
+          "type": "object",
+          "properties": {
+            "closID":            { "type": "string" },
+            "schemata":          { "type": "array", "items": { "type": "string" } },
+            "l3CacheSchema":     { "type": "string" },
+            "memBwSchema":       { "type": "string", "pattern": "^MB:[^\\n]*$" },
+            "enableMonitoring":  { "type": "boolean" }
+          }
+        },
+        "memoryPolicy": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["MPOL_DEFAULT", "MPOL_BIND", "MPOL_INTERLEAVE", "MPOL_WEIGHTED_INTERLEAVE", "MPOL_PREFERRED", "MPOL_PREFERRED_MANY", "MPOL_LOCAL"]
+            },
+            "nodes": { "type": "string" },
+            "flags": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["MPOL_F_NUMA_BALANCING", "MPOL_F_RELATIVE_NODES", "MPOL_F_STATIC_NODES"]
+              }
+            }
+          }
+        },
+        "personality": {
+          "type": "object",
+          "properties": {
+            "domain": {
+              "type": "string",
+              "enum": ["LINUX", "LINUX32"]
+            },
+            "flags": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "timeOffsets": {
+          "type": "object",
+          "properties": {
+            "boottime": {
+              "type": "object",
+              "properties": {
+                "secs":     { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+                "nanosecs": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+              }
+            },
+            "monotonic": {
+              "type": "object",
+              "properties": {
+                "secs":     { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+                "nanosecs": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Hook": {
+      "type": "object",
+      "required": ["path"],
+      "properties": {
+        "path":    { "type": "string" },
+        "args":    { "type": "array", "items": { "type": "string" } },
+        "env":     { "type": "array", "items": { "type": "string" } },
+        "timeout": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}
